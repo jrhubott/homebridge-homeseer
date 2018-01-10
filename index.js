@@ -1169,11 +1169,7 @@ HomeSeerAccessory.prototype = {
                         .addCharacteristic(new Characteristic.ObstructionDetected())
                         .on('get', this.getObstructionDetected.bind(this));
                 }
-                if (this.config.batteryRef) {
-                    doorService
-                        .addCharacteristic(new Characteristic.StatusLowBattery())
-                        .on('get', this.getLowBatteryStatus.bind(this));
-                }                
+             
 
                 this.statusCharacteristic = doorService.getCharacteristic(Characteristic.CurrentPosition);
                 services.push(doorService);
@@ -1308,6 +1304,13 @@ HomeSeerAccessory.prototype = {
                 lockService
                     .getCharacteristic(Characteristic.LockTargetState)
                     .on('set', this.setLockTargetState.bind(this));
+
+                if (this.config.batteryRef) {
+                    lockService
+                        .addCharacteristic(new Characteristic.StatusLowBattery())
+                        .on('get', this.getLowBatteryStatus.bind(this));
+                }  
+                
                 services.push(lockService);
 
                 this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
