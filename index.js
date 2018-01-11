@@ -1308,11 +1308,13 @@ HomeSeerAccessory.prototype = {
                 if (this.config.batteryRef) {
                     console.log("Configuring a Lock Battery Ref. " + this.config.batteryRef +" with threshold " + this.config.batteryThreshold);
                     lockService
+                    .addService(Service.BatteryService, "Fake Lock Battery")
                     .getCharacteristic(Characteristic.BatteryLevel)
-                    .on('get', this.getValue.bind(this));
-                    lockService
-                        .addCharacteristic(new Characteristic.StatusLowBattery())
-                        .on('get', this.getLowBatteryStatus.bind(this));
+                      .on('get', function(callback) {
+		                callback (null, FAKE_LOCK.getBattery());
+                         });
+                    console.log("Added a Battery");
+
                 }  
                 
                 services.push(lockService);
