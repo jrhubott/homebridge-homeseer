@@ -1307,6 +1307,9 @@ HomeSeerAccessory.prototype = {
 
                 if (this.config.batteryRef) {
                     lockService
+                    .getCharacteristic(Characteristic.BatteryLevel)
+                    .on('get', this.getValue.bind(this));
+                    lockService
                         .addCharacteristic(new Characteristic.StatusLowBattery())
                         .on('get', this.getLowBatteryStatus.bind(this));
                 }  
