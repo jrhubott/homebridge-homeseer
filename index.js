@@ -1306,6 +1306,7 @@ HomeSeerAccessory.prototype = {
                     .on('set', this.setLockTargetState.bind(this));
 
                 if (this.config.batteryRef) {
+                    console.log("Configuring a Lock Battery Ref. " + this.config.batteryRef +" with threshold " + this.config.batteryThreshold);
                     lockService
                     .getCharacteristic(Characteristic.BatteryLevel)
                     .on('get', this.getValue.bind(this));
