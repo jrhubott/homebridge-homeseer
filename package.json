@@ -15,7 +15,7 @@
   },
   "engines": {
     "node": ">=0.12.0",
-    "homebridge": ">=0.2.0"
+    "homebridge": "git://github.com/jvmahon/homebridge"
   },
   "dependencies": {
     "request" : ">=2.75.0",
