@@ -303,6 +303,9 @@ HomeSeerPlatform.prototype = {
                         }
                     }
                 }
+		    console.log("*** Found Accessories ****");
+		    console.log(foundAccessories);
+		    console.log("**************************");
                 callback(foundAccessories);
             }
         }.bind(this));
