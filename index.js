@@ -1337,8 +1337,12 @@ HomeSeerAccessory.prototype = {
 			  console.log("Battery Added");
 			}
 	*/	
-		                   
-                services.push(lockService);
+		    console.log("********************");
+		    console.log("printing the Lock Service configuration data");
+		    console.log(lockService);
+		    console.log("********************");
+		    
+		    services.push(lockService);
 
                 this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
 			
