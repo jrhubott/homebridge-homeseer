@@ -1224,6 +1224,10 @@ HomeSeerAccessory.prototype = {
                 break;
             }
             case "Battery": {
+		console.log("Configuring an Independent Battery with config data");
+		    console.log(this.config)
+		    console.log("******* End config Data ******");
+		    
                 this.config.batteryRef = this.ref;
                 var batteryService = new Service.BatteryService();
                 batteryService
@@ -1233,6 +1237,9 @@ HomeSeerAccessory.prototype = {
                     .getCharacteristic(Characteristic.StatusLowBattery)
                     .on('get', this.getLowBatteryStatus.bind(this));
                 services.push(batteryService);
+		    Console.log("Pushed battery service data structure is....");
+		    console.log(batteryService);
+		    console.log("End Battery Service Data Structure");
                 break;
             }
             case "Thermostat": {
@@ -1307,47 +1314,37 @@ HomeSeerAccessory.prototype = {
                 lockService
                     .getCharacteristic(Characteristic.LockTargetState)
                     .on('set', this.setLockTargetState.bind(this));
+		    
+		services.push(lockService);
+                this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
 
-		    /*
+		    /* Add a battery service. See HomeKitTypes.js at line 2590
                 if (this.config.batteryRef) {
                     console.log("Configuring a Lock Battery Ref. " + this.config.batteryRef +" with threshold " + this.config.batteryThreshold);
-                    lockService
-                    .addService(Service.BatteryService, "Fake Lock Battery")
+                    console.log("Configuring the Lock's Battery with config data");
+		    console.log(this.config)
+		    console.log("******* End config Data ******");
+		this.config.batteryRef = this.batteryRef;
+                var batteryService = new Service.BatteryService();
+                batteryService
                     .getCharacteristic(Characteristic.BatteryLevel)
-                      .on('get', function(callback) {
-		                callback (null, FAKE_LOCK.getBattery());
-                         });
-                    console.log("Added a Battery");
-
+                    .on('get', this.getValue.bind(this));
+                batteryService
+                    .getCharacteristic(Characteristic.StatusLowBattery)
+                    .on('get', this.getLowBatteryStatus.bind(this));
+                services.push(batteryService);
+			Console.log("Pushed battery service data structure is....");
+		    console.log(batteryService);
+		    console.log("End Battery Service Data Structure");
                 }  
 		*/
 		    
-
-		 
-	/*	 Look at AirConditionar_accessory to see how multiple services are added    
-		    
-          	  if (this.config.batteryRef) {
-			  console.log("Adding a Battery");
-			this.config.batteryRef = this.batteryRef;
-                	var batteryService = new Service.BatteryService();
-                	batteryService
-                	    .getCharacteristic(Characteristic.BatteryLevel)
-               	     	.on('get', this.getValue.bind(this));
-                	batteryService
-                    	.getCharacteristic(Characteristic.StatusLowBattery)
-                    	.on('get', this.getLowBatteryStatus.bind(this));
-                	services.push(batteryService);
-			  console.log("Battery Added");
-			}
-	*/	
 		    console.log("********************");
 		    console.log("printing the Lock Service configuration data");
 		    console.log(lockService);
 		    console.log("********************");
 		    
-		    services.push(lockService);
 
-                this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
 			
                 break;
             }
