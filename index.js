@@ -1319,12 +1319,9 @@ HomeSeerAccessory.prototype = {
                 }  
 		*/
 		    
-               
-                services.push(lockService);
 
-                this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
 		 
-		    
+	/*	 Look at AirConditionar_accessory to see how multiple services are added    
 		    
           	  if (this.config.batteryRef) {
 			  console.log("Adding a Battery");
@@ -1339,7 +1336,11 @@ HomeSeerAccessory.prototype = {
                 	services.push(batteryService);
 			  console.log("Battery Added");
 			}
-			
+	*/	
+		                   
+                services.push(lockService);
+
+                this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
 			
                 break;
             }
