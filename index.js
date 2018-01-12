@@ -1305,6 +1305,7 @@ HomeSeerAccessory.prototype = {
                     .getCharacteristic(Characteristic.LockTargetState)
                     .on('set', this.setLockTargetState.bind(this));
 
+		    /*
                 if (this.config.batteryRef) {
                     console.log("Configuring a Lock Battery Ref. " + this.config.batteryRef +" with threshold " + this.config.batteryThreshold);
                     lockService
@@ -1316,11 +1317,32 @@ HomeSeerAccessory.prototype = {
                     console.log("Added a Battery");
 
                 }  
+		*/
+		    
+
+		    
+		    
+
+		    
+		    
                 
                 services.push(lockService);
 
                 this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
-
+		    
+		    
+          	  if (this.config.batteryRef) {
+			this.config.batteryRef = this.batteryRef;
+                	var batteryService = new Service.BatteryService();
+                	batteryService
+                	    .getCharacteristic(Characteristic.BatteryLevel)
+               	     	.on('get', this.getValue.bind(this));
+                	batteryService
+                    	.getCharacteristic(Characteristic.StatusLowBattery)
+                    	.on('get', this.getLowBatteryStatus.bind(this));
+                	services.push(batteryService);
+			}
+			
                 break;
             }
             case "SecuritySystem": {
