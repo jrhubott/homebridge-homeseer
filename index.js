@@ -1324,7 +1324,7 @@ HomeSeerAccessory.prototype = {
 
                 this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
 		 
-		    /*
+		    
 		    
           	  if (this.config.batteryRef) {
 			  console.log("Adding a Battery");
@@ -1339,7 +1339,7 @@ HomeSeerAccessory.prototype = {
                 	services.push(batteryService);
 			  console.log("Battery Added");
 			}
-			*/
+			
 			
                 break;
             }
