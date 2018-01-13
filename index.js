@@ -1331,9 +1331,11 @@ HomeSeerAccessory.prototype = {
 		    console.log("******* End config Data ******");
 		    
                 var batteryService = new Service.BatteryService();
+		    var that = this;
+		    that.config.ref = this.config.batteryRef;
                 batteryService
                     .getCharacteristic(Characteristic.BatteryLevel)
-                    .on('get', this.getValue.bind(this));
+                    .on('get', this.getValue.bind(that));
                 batteryService
                     .getCharacteristic(Characteristic.StatusLowBattery)
                     .on('get', this.getLowBatteryStatus.bind(this));
