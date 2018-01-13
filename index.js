@@ -1369,6 +1369,7 @@ HomeSeerAccessory.prototype = {
                     .getCharacteristic(Characteristic.StatusLowBattery)
                     .on('get', this.getLowBatteryStatus.bind(this));
                 services.push(batteryService);
+		    console.log("******* Configured a Battery with initital value " + getBatteryValue() );
 		    console.log("Pushed battery service data structure is....");
 		    console.log(batteryService);
 		    console.log("End Battery Service Data Structure");
