@@ -306,7 +306,6 @@ HomeSeerPlatform.prototype = {
                         }
                     }
                 }
-
                 callback(foundAccessories);
             }
         }.bind(this));
@@ -725,8 +724,6 @@ HomeSeerAccessory.prototype = {
     getBatteryValue: function (callback) {
         var ref = this.config.batteryRef;
         var url = this.access_url + "request=getstatus&ref=" + ref;
-
-	    this.log("************* Get Battery Value Called by " + this.name + " with reference " + ref + " *********");
 	  	
         httpRequest(url, 'GET', function (error, response, body) {
             if (error) {
@@ -737,7 +734,7 @@ HomeSeerAccessory.prototype = {
                 var status = JSON.parse(body);
                 var value = status.Devices[0].value;
 
-                this.log("****" + this.name + ': getBatteryValue function succeeded: value=' + value + "*****");
+                this.log("getBatteryValue function succeeded for: " + this.name + "with value=' + value);
 
 		callback(null, value);
 
@@ -749,8 +746,6 @@ HomeSeerAccessory.prototype = {
     getLowBatteryStatus: function (callback) {
         var ref = this.config.batteryRef;
         var url = this.access_url + "request=getstatus&ref=" + ref;
-	    
-	    this.log("********** Called getLowBatteryStatus function Called by " + this.name + " with reference " + ref + " **********");
 
         httpRequest(url, 'GET', function (error, response, body) {
             if (error) {
@@ -1261,7 +1256,6 @@ HomeSeerAccessory.prototype = {
                     .getCharacteristic(Characteristic.StatusLowBattery)
                     .on('get', this.getLowBatteryStatus.bind(this));
                 services.push(batteryService);
-		    
 		break;
             }
             case "Thermostat": {
@@ -1337,13 +1331,13 @@ HomeSeerAccessory.prototype = {
                     .getCharacteristic(Characteristic.LockTargetState)
                     .on('set', this.setLockTargetState.bind(this));
 		    
+		// If a battery is present, make the lockService the primary service before pushing it to the array of services.
+		if (this.config.batteryRef) { lockService.isPrimaryService = true;}
+		    
 		services.push(lockService);
-                this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
+		this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
 
-		    // If a battery is present, make the lockService the primary service.
-		    if (this.config.batteryRef) { lockService.isPrimaryService = true;}
-		    
-		    
+		// If batteryRef has been defined, then add a battery service.
 		if (this.config.batteryRef)
 		{
 		this.log("Adding a Battery Service to Lock " + this.name);
