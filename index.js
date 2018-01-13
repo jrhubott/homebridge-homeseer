@@ -306,9 +306,7 @@ HomeSeerPlatform.prototype = {
                         }
                     }
                 }
-		    console.log("*** Found Accessories ****");
-		    console.log(foundAccessories);
-		    console.log("**************************");
+
                 callback(foundAccessories);
             }
         }.bind(this));
@@ -1345,16 +1343,10 @@ HomeSeerAccessory.prototype = {
 		    // If a battery is present, make the lockService the primary service.
 		    if (this.config.batteryRef) { lockService.isPrimaryService = true;}
 		    
-		    console.log("********************");
-		    console.log("printing the Lock Service configuration data");
-		    console.log(lockService);
-		    console.log("********************");
 		    
 		if (this.config.batteryRef)
 		{
-		this.log("********** Configuring a Lock Battery with config data **********");
-		    this.log(this.config)
-		    this.log("******* End config Data ******");
+		this.log("Adding a Battery Service to Lock " + this.name);
 		    
                 var batteryService = new Service.BatteryService();
                 batteryService
@@ -1364,10 +1356,6 @@ HomeSeerAccessory.prototype = {
                     .getCharacteristic(Characteristic.StatusLowBattery)
                     .on('get', this.getLowBatteryStatus.bind(this));
                 services.push(batteryService);
-		    this.log("******* Configured a Battery with initital value " + this.getBatteryValue.bind(this) );
-		    this.log("Pushed battery service data structure is....");
-		    this.log(batteryService);
-		    this.log("End Battery Service Data Structure");
 		}
 		    			
                 break;
