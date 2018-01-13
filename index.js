@@ -1318,13 +1318,18 @@ HomeSeerAccessory.prototype = {
 		services.push(lockService);
                 this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
 
-		    /* Add a battery service. See HomeKitTypes.js at line 2590
-                if (this.config.batteryRef) {
-                    console.log("Configuring a Lock Battery Ref. " + this.config.batteryRef +" with threshold " + this.config.batteryThreshold);
-                    console.log("Configuring the Lock's Battery with config data");
+
+		    
+		    console.log("********************");
+		    console.log("printing the Lock Service configuration data");
+		    console.log(lockService);
+		    console.log("********************");
+		    
+
+		console.log("Configuring an Independent Battery with config data");
 		    console.log(this.config)
 		    console.log("******* End config Data ******");
-		this.config.batteryRef = this.batteryRef;
+		    
                 var batteryService = new Service.BatteryService();
                 batteryService
                     .getCharacteristic(Characteristic.BatteryLevel)
@@ -1333,19 +1338,11 @@ HomeSeerAccessory.prototype = {
                     .getCharacteristic(Characteristic.StatusLowBattery)
                     .on('get', this.getLowBatteryStatus.bind(this));
                 services.push(batteryService);
-			Console.log("Pushed battery service data structure is....");
+		    Console.log("Pushed battery service data structure is....");
 		    console.log(batteryService);
 		    console.log("End Battery Service Data Structure");
-                }  
-		*/
-		    
-		    console.log("********************");
-		    console.log("printing the Lock Service configuration data");
-		    console.log(lockService);
-		    console.log("********************");
-		    
 
-			
+		    			
                 break;
             }
             case "SecuritySystem": {
