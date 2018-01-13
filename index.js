@@ -156,6 +156,8 @@
 //              "lockJammedValues":[2],         // Optional - List of the HomeSeer device values for a HomeKit lock state=JAMMED
 //              "unlockValue":0,                // Required - HomeSeer device control value to unlock
 //              "lockValue":1                   // Required - HomeSeer device control value to lock
+//              "batteryRef":209,               // Optional - HomeSeer device reference for the lock battery level
+//              "batteryThreshold":35,          // Optional - If lock battery level is below this value, the HomeKit LowBattery characteristic is set to 1.
 //            },
 //            {
 //              "ref":230,                      // Required - HomeSeer Device Reference of a Security System
