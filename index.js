@@ -1353,8 +1353,9 @@ HomeSeerAccessory.prototype = {
 		    console.log(lockService);
 		    console.log("********************");
 		    
-
-		console.log("Configuring an Independent Battery with config data");
+if (this.config.batteryRef)
+{
+		console.log("Configuring a Lock Battery with config data");
 		    console.log(this.config)
 		    console.log("******* End config Data ******");
 		    
@@ -1370,7 +1371,7 @@ HomeSeerAccessory.prototype = {
 		    console.log("Pushed battery service data structure is....");
 		    console.log(batteryService);
 		    console.log("End Battery Service Data Structure");
-
+}
 		    			
                 break;
             }
