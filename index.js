@@ -734,7 +734,7 @@ HomeSeerAccessory.prototype = {
                 var status = JSON.parse(body);
                 var value = status.Devices[0].value;
 
-                this.log("getBatteryValue function succeeded for: " + this.name + "with value= " + value);
+                this.log("getBatteryValue function succeeded for: " + this.name + " with value= " + value);
 
 		callback(null, value);
 
