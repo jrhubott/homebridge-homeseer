@@ -722,7 +722,14 @@ HomeSeerAccessory.prototype = {
 
 // getBatteryValue added to support reading of the Battery Level for locks using the batteryRef reference.
     getBatteryValue: function (callback) {
-        var ref = this.config.batteryRef;
+	    
+	    // If batteryRef is defined, use that to get battery status. 
+	    // Otherwise, assume ref directly identified the HomeSeer battery object.
+	    if (this.config.batteryRef)
+		    	{ var ref = this.config.batteryRef;} 
+	    	else 
+			{ var ref = this.config.ref; }
+	    
         var url = this.access_url + "request=getstatus&ref=" + ref;
 	  	
         httpRequest(url, 'GET', function (error, response, body) {
