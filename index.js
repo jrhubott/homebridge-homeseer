@@ -726,7 +726,7 @@ HomeSeerAccessory.prototype = {
         var ref = this.config.batteryRef;
         var url = this.access_url + "request=getstatus&ref=" + ref;
 
-	    console.log("************* Get Battery Value Called by " + this.name + " with reference " + ref + " *********");
+	    this.log("************* Get Battery Value Called by " + this.name + " with reference " + ref + " *********");
 	  	
         httpRequest(url, 'GET', function (error, response, body) {
             if (error) {
@@ -750,7 +750,7 @@ HomeSeerAccessory.prototype = {
         var ref = this.config.batteryRef;
         var url = this.access_url + "request=getstatus&ref=" + ref;
 	    
-	    console.log("********** Called getLowBatteryStatus function Called by " + this.name + " **********");
+	    this.log("********** Called getLowBatteryStatus function Called by " + this.name + " with reference " + ref + " **********");
 
         httpRequest(url, 'GET', function (error, response, body) {
             if (error) {
@@ -1355,9 +1355,9 @@ HomeSeerAccessory.prototype = {
 		    
 if (this.config.batteryRef)
 {
-		console.log("Configuring a Lock Battery with config data");
-		    console.log(this.config)
-		    console.log("******* End config Data ******");
+		this.log("********** Configuring a Lock Battery with config data **********");
+		    this.log(this.config)
+		    this.log("******* End config Data ******");
 		    
                 var batteryService = new Service.BatteryService();
                 batteryService
@@ -1367,10 +1367,10 @@ if (this.config.batteryRef)
                     .getCharacteristic(Characteristic.StatusLowBattery)
                     .on('get', this.getLowBatteryStatus.bind(this));
                 services.push(batteryService);
-		    console.log("******* Configured a Battery with initital value " + this.getBatteryValue.bind(this) );
-		    console.log("Pushed battery service data structure is....");
-		    console.log(batteryService);
-		    console.log("End Battery Service Data Structure");
+		    this.log("******* Configured a Battery with initital value " + this.getBatteryValue.bind(this) );
+		    this.log("Pushed battery service data structure is....");
+		    this.log(batteryService);
+		    this.log("End Battery Service Data Structure");
 }
 		    			
                 break;
