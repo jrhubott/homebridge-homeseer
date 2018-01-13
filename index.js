@@ -1531,8 +1531,5 @@ HomeSeerEvent.prototype = {
         return services;
     }
 }
-console.log("*******************************");
-console.log("Printing HomeSeer Platform");
-console.log(HomeSeerPlatform);
-console.log("************** Done *************");
+
 module.exports.platform = HomeSeerPlatform;
