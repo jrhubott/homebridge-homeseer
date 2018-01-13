@@ -724,7 +724,7 @@ HomeSeerAccessory.prototype = {
         var ref = this.config.batteryRef;
         var url = this.access_url + "request=getstatus&ref=" + ref;
 
-	    console.log("*************" Get Battery Value Called ************ with reference " + ref);
+	    console.log("************* Get Battery Value Called ************ with reference " + ref);
 	  	
         httpRequest(url, 'GET', function (error, response, body) {
             if (error) {
