@@ -34,7 +34,8 @@
 // - Added Window support
 // - Added Window Covering support
 // - Added obstruction support to doors, windows, and windowCoverings
-//
+// V0.11 - 2018/01/13
+// - Added battery support to Lock devices
 //
 // Remember to add platform to config.json. 
 //
@@ -156,7 +157,7 @@
 //              "lockJammedValues":[2],         // Optional - List of the HomeSeer device values for a HomeKit lock state=JAMMED
 //              "unlockValue":0,                // Required - HomeSeer device control value to unlock
 //              "lockValue":1                   // Required - HomeSeer device control value to lock
-//              "batteryRef":209,               // Optional - HomeSeer device reference for the lock battery level
+//              "batteryRef":209,               // Optional - HomeSeer device reference for the lock battery 
 //              "batteryThreshold":35,          // Optional - If lock battery level is below this value, the HomeKit LowBattery characteristic is set to 1.
 //            },
 //            {
@@ -721,7 +722,8 @@ HomeSeerAccessory.prototype = {
         else
             callback(null, 0);
     },
-	
+
+// getBatteryValue added to support reading of the Battery Level for locks using the batteryRef reference.
     getBatteryValue: function (callback) {
         var ref = this.config.batteryRef;
         var url = this.access_url + "request=getstatus&ref=" + ref;
@@ -1252,10 +1254,6 @@ HomeSeerAccessory.prototype = {
                 break;
             }
             case "Battery": {
-		console.log("Configuring an Independent Battery with config data");
-		    console.log(this.config)
-		    console.log("******* End config Data ******");
-		    
                 this.config.batteryRef = this.ref;
                 var batteryService = new Service.BatteryService();
                 batteryService
@@ -1265,10 +1263,8 @@ HomeSeerAccessory.prototype = {
                     .getCharacteristic(Characteristic.StatusLowBattery)
                     .on('get', this.getLowBatteryStatus.bind(this));
                 services.push(batteryService);
-		    console.log("Pushed battery service data structure is....");
-		    console.log(batteryService);
-		    console.log("End Battery Service Data Structure");
-                break;
+		    
+		break;
             }
             case "Thermostat": {
                 var thermostatService = new Service.Thermostat();
@@ -1346,15 +1342,16 @@ HomeSeerAccessory.prototype = {
 		services.push(lockService);
                 this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
 
-
+		    // If a battery is present, make the lockService the primary service.
+		    if (this.config.batteryRef) { lockService.isPrimaryService = true;}
 		    
 		    console.log("********************");
 		    console.log("printing the Lock Service configuration data");
 		    console.log(lockService);
 		    console.log("********************");
 		    
-if (this.config.batteryRef)
-{
+		if (this.config.batteryRef)
+		{
 		this.log("********** Configuring a Lock Battery with config data **********");
 		    this.log(this.config)
 		    this.log("******* End config Data ******");
@@ -1371,7 +1368,7 @@ if (this.config.batteryRef)
 		    this.log("Pushed battery service data structure is....");
 		    this.log(batteryService);
 		    this.log("End Battery Service Data Structure");
-}
+		}
 		    			
                 break;
             }
