@@ -719,6 +719,32 @@ HomeSeerAccessory.prototype = {
         else
             callback(null, 0);
     },
+	
+    getBatteryValue: function (callback) {
+        var ref = this.config.batteryRef;
+        var url = this.access_url + "request=getstatus&ref=" + ref;
+
+        httpRequest(url, 'GET', function (error, response, body) {
+            if (error) {
+                this.log(this.name + ': getBatteryValue function failed: %s', error.message);
+                callback(error, 0);
+            }
+            else {
+                var status = JSON.parse(body);
+                var value = status.Devices[0].value;
+                var minValue = 10;
+
+                this.log(this.name + ': getBatteryValue function succeeded: value=' + value);
+                if (this.config.batteryThreshold) {
+                    minValue = this.config.batteryThreshold;
+                }
+
+		    callback(null, value);
+
+            }
+        }.bind(this));
+    },
+	
 
     getLowBatteryStatus: function (callback) {
         var ref = this.config.batteryRef;
@@ -1333,7 +1359,7 @@ HomeSeerAccessory.prototype = {
                 var batteryService = new Service.BatteryService();
                 batteryService
                     .getCharacteristic(Characteristic.BatteryLevel)
-                    .on('get', this.getLowBatteryStatus.bind(this));
+                    .on('get', this.getBatteryValue.bind(this));
                 batteryService
                     .getCharacteristic(Characteristic.StatusLowBattery)
                     .on('get', this.getLowBatteryStatus.bind(this));
