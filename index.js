@@ -724,6 +724,8 @@ HomeSeerAccessory.prototype = {
         var ref = this.config.batteryRef;
         var url = this.access_url + "request=getstatus&ref=" + ref;
 
+	    console.log("*************" Get Battery Value Called ************");
+	  	
         httpRequest(url, 'GET', function (error, response, body) {
             if (error) {
                 this.log(this.name + ': getBatteryValue function failed: %s', error.message);
@@ -738,6 +740,7 @@ HomeSeerAccessory.prototype = {
                 if (this.config.batteryThreshold) {
                     minValue = this.config.batteryThreshold;
                 }
+		    console.log("*****************");
 
 		    callback(null, value);
 
