@@ -726,7 +726,7 @@ HomeSeerAccessory.prototype = {
         var ref = this.config.batteryRef;
         var url = this.access_url + "request=getstatus&ref=" + ref;
 
-	    console.log("************* Get Battery Value Called ************ with reference " + ref);
+	    console.log("************* Get Battery Value Called by " + this.name + " with reference " + ref + " *********");
 	  	
         httpRequest(url, 'GET', function (error, response, body) {
             if (error) {
@@ -736,15 +736,10 @@ HomeSeerAccessory.prototype = {
             else {
                 var status = JSON.parse(body);
                 var value = status.Devices[0].value;
-                var minValue = 10;
 
-                this.log(this.name + ': getBatteryValue function succeeded: value=' + value);
-                if (this.config.batteryThreshold) {
-                    minValue = this.config.batteryThreshold;
-                }
-		    console.log("*****************");
+                this.log("****" + this.name + ': getBatteryValue function succeeded: value=' + value + "*****");
 
-		    callback(null, value);
+		callback(null, value);
 
             }
         }.bind(this));
@@ -755,7 +750,7 @@ HomeSeerAccessory.prototype = {
         var ref = this.config.batteryRef;
         var url = this.access_url + "request=getstatus&ref=" + ref;
 	    
-	    console.log("********** Called getLowBatteryStatus function **********");
+	    console.log("********** Called getLowBatteryStatus function Called by " + this.name + " **********");
 
         httpRequest(url, 'GET', function (error, response, body) {
             if (error) {
