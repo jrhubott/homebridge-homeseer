@@ -34,7 +34,8 @@
 // - Added Window support
 // - Added Window Covering support
 // - Added obstruction support to doors, windows, and windowCoverings
-//
+// V0.11 - 2018/01/13
+// - Added battery support to Lock devices
 //
 // Remember to add platform to config.json. 
 //
@@ -156,6 +157,8 @@
 //              "lockJammedValues":[2],         // Optional - List of the HomeSeer device values for a HomeKit lock state=JAMMED
 //              "unlockValue":0,                // Required - HomeSeer device control value to unlock
 //              "lockValue":1                   // Required - HomeSeer device control value to lock
+//              "batteryRef":209,               // Optional - HomeSeer device reference for the lock battery 
+//              "batteryThreshold":35,          // Optional - If lock battery level is below this value, the HomeKit LowBattery characteristic is set to 1.
 //            },
 //            {
 //              "ref":230,                      // Required - HomeSeer Device Reference of a Security System
@@ -717,6 +720,36 @@ HomeSeerAccessory.prototype = {
             callback(null, 0);
     },
 
+// getBatteryValue added to support reading of the Battery Level for locks using the batteryRef reference.
+    getBatteryValue: function (callback) {
+	    
+	    // If batteryRef is defined, use that to get battery status. 
+	    // Otherwise, assume ref directly identified the HomeSeer battery object.
+	    if (this.config.batteryRef)
+		    	{ var ref = this.config.batteryRef;} 
+	    	else 
+			{ var ref = this.config.ref; }
+	    
+        var url = this.access_url + "request=getstatus&ref=" + ref;
+	  	
+        httpRequest(url, 'GET', function (error, response, body) {
+            if (error) {
+                this.log(this.name + ': getBatteryValue function failed: %s', error.message);
+                callback(error, 0);
+            }
+            else {
+                var status = JSON.parse(body);
+                var value = status.Devices[0].value;
+
+                this.log("getBatteryValue function succeeded for: " + this.name + " with value= " + value);
+
+		callback(null, value);
+
+            }
+        }.bind(this));
+    },
+	
+
     getLowBatteryStatus: function (callback) {
         var ref = this.config.batteryRef;
         var url = this.access_url + "request=getstatus&ref=" + ref;
@@ -1169,6 +1202,7 @@ HomeSeerAccessory.prototype = {
                         .addCharacteristic(new Characteristic.ObstructionDetected())
                         .on('get', this.getObstructionDetected.bind(this));
                 }
+             
 
                 this.statusCharacteristic = doorService.getCharacteristic(Characteristic.CurrentPosition);
                 services.push(doorService);
@@ -1229,7 +1263,7 @@ HomeSeerAccessory.prototype = {
                     .getCharacteristic(Characteristic.StatusLowBattery)
                     .on('get', this.getLowBatteryStatus.bind(this));
                 services.push(batteryService);
-                break;
+		break;
             }
             case "Thermostat": {
                 var thermostatService = new Service.Thermostat();
@@ -1303,10 +1337,28 @@ HomeSeerAccessory.prototype = {
                 lockService
                     .getCharacteristic(Characteristic.LockTargetState)
                     .on('set', this.setLockTargetState.bind(this));
-                services.push(lockService);
+		    
+		// If a battery is present, make the lockService the primary service before pushing it to the array of services.
+		if (this.config.batteryRef) { lockService.isPrimaryService = true;}
+		    
+		services.push(lockService);
+		this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
 
-                this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
-
+		// If batteryRef has been defined, then add a battery service.
+		if (this.config.batteryRef)
+		{
+		this.log("Adding a Battery Service to Lock " + this.name);
+		    
+                var batteryService = new Service.BatteryService();
+                batteryService
+                    .getCharacteristic(Characteristic.BatteryLevel)
+                    .on('get', this.getBatteryValue.bind(this));
+                batteryService
+                    .getCharacteristic(Characteristic.StatusLowBattery)
+                    .on('get', this.getLowBatteryStatus.bind(this));
+                services.push(batteryService);
+		}
+		    			
                 break;
             }
             case "SecuritySystem": {
