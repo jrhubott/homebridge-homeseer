@@ -35,7 +35,7 @@
 // - Added Window Covering support
 // - Added obstruction support to doors, windows, and windowCoverings
 // V0.11 - 2018/01/13
-// - Added battery support to Lock devices
+// - Added battery support to Lock devices and added added battery services to other devices.
 //
 // Remember to add platform to config.json. 
 //
@@ -725,12 +725,9 @@ HomeSeerAccessory.prototype = {
 	    
 	    // If batteryRef is defined, use that to get battery status. 
 	    // Otherwise, assume ref directly identified the HomeSeer battery object.
-	    if (this.config.batteryRef)
-		    	{ var ref = this.config.batteryRef;} 
-	    	else 
-			{ var ref = this.config.ref; }
-	    
-        var url = this.access_url + "request=getstatus&ref=" + ref;
+	    if (!this.config.batteryRef) { this.config.batteryRef = this.config.ref;} 
+	    	
+	    var url = this.access_url + "request=getstatus&ref=" + this.config.batteryRef;
 	  	
         httpRequest(url, 'GET', function (error, response, body) {
             if (error) {
@@ -1058,132 +1055,243 @@ HomeSeerAccessory.prototype = {
                 var temperatureSensorService = new Service.TemperatureSensor();
                 temperatureSensorService
                     .getCharacteristic(Characteristic.CurrentTemperature)
-                    .on('get', this.getTemperature.bind(this));
+                    .on('get', this.getTemperature.bind(this))
+                    .isPrimaryService = true;
                 temperatureSensorService
                     .getCharacteristic(Characteristic.CurrentTemperature).setProps({ minValue: -100 });
-                if (this.config.batteryRef) {
-                    temperatureSensorService
-                        .addCharacteristic(new Characteristic.StatusLowBattery())
-                        .on('get', this.getLowBatteryStatus.bind(this));
-                }
+
                 services.push(temperatureSensorService);
+
+                // If batteryRef has been defined, then add a battery service.
+                if (this.config.batteryRef) {
+                    this.log("Adding a Battery Service to " + this.name);
+
+                    var batteryService = new Service.BatteryService();
+                    batteryService
+                        .getCharacteristic(Characteristic.BatteryLevel)
+                        .on('get', this.getBatteryValue.bind(this));
+                    batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+                        .on('get', this.getLowBatteryStatus.bind(this));
+                    services.push(batteryService);
+                }
                 break;
             }
             case "CarbonMonoxideSensor": {
                 var carbonMonoxideSensorService = new Service.CarbonMonoxideSensor();
                 carbonMonoxideSensorService
                     .getCharacteristic(Characteristic.CarbonMonoxideDetected)
-                    .on('get', this.getBinarySensorState.bind(this));
-                if (this.config.batteryRef) {
-                    carbonMonoxideSensorService
-                        .addCharacteristic(new Characteristic.StatusLowBattery())
-                        .on('get', this.getLowBatteryStatus.bind(this));
-                }
+                    .on('get', this.getBinarySensorState.bind(this))
+                    .isPrimaryService = true;
+
                 services.push(carbonMonoxideSensorService);
+
+                // If batteryRef has been defined, then add a battery service.
+                if (this.config.batteryRef) {
+                    this.log("Adding a Battery Service to " + this.name);
+
+                    var batteryService = new Service.BatteryService();
+                    batteryService
+                        .getCharacteristic(Characteristic.BatteryLevel)
+                        .on('get', this.getBatteryValue.bind(this));
+                    batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+                        .on('get', this.getLowBatteryStatus.bind(this));
+                    services.push(batteryService);
+                }
                 break;
             }
             case "CarbonDioxideSensor": {
                 var carbonDioxideSensorService = new Service.CarbonDioxideSensor();
                 carbonDioxideSensorService
                     .getCharacteristic(Characteristic.CarbonDioxideDetected)
-                    .on('get', this.getBinarySensorState.bind(this));
-                if (this.config.batteryRef) {
-                    carbonDioxideSensorService
-                        .addCharacteristic(new Characteristic.StatusLowBattery())
-                        .on('get', this.getLowBatteryStatus.bind(this));
-                }
+                    .on('get', this.getBinarySensorState.bind(this))
+                    .isPrimaryService = true;
+
                 services.push(carbonDioxideSensorService);
+
+                // If batteryRef has been defined, then add a battery service.
+                if (this.config.batteryRef) {
+                    this.log("Adding a Battery Service to " + this.name);
+
+                    var batteryService = new Service.BatteryService();
+                    batteryService
+                        .getCharacteristic(Characteristic.BatteryLevel)
+                        .on('get', this.getBatteryValue.bind(this));
+                    batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+                        .on('get', this.getLowBatteryStatus.bind(this));
+                    services.push(batteryService);
+                }
                 break;
             }
             case "ContactSensor": {
                 var contactSensorService = new Service.ContactSensor();
                 contactSensorService
                     .getCharacteristic(Characteristic.ContactSensorState)
-                    .on('get', this.getBinarySensorState.bind(this));
-                if (this.config.batteryRef) {
-                    contactSensorService
-                        .addCharacteristic(new Characteristic.StatusLowBattery())
-                        .on('get', this.getLowBatteryStatus.bind(this));
-                }
+                    .on('get', this.getBinarySensorState.bind(this))
+                    .isPrimaryService = true;
+
                 services.push(contactSensorService);
+
+                // If batteryRef has been defined, then add a battery service.
+                if (this.config.batteryRef) {
+                    this.log("Adding a Battery Service to " + this.name);
+
+                    var batteryService = new Service.BatteryService();
+                    batteryService
+                        .getCharacteristic(Characteristic.BatteryLevel)
+                        .on('get', this.getBatteryValue.bind(this));
+                    batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+                        .on('get', this.getLowBatteryStatus.bind(this));
+                    services.push(batteryService);
+                }
+
                 break;
             }
             case "MotionSensor": {
                 var motionSensorService = new Service.MotionSensor();
                 motionSensorService
                     .getCharacteristic(Characteristic.MotionDetected)
-                    .on('get', this.getBinarySensorState.bind(this));
-                if (this.config.batteryRef) {
-                    motionSensorService
-                        .addCharacteristic(new Characteristic.StatusLowBattery())
-                        .on('get', this.getLowBatteryStatus.bind(this));
-                }
+                    .on('get', this.getBinarySensorState.bind(this))
+                    .isPrimaryService = true;
+
                 services.push(motionSensorService);
+
+                // If batteryRef has been defined, then add a battery service.
+                if (this.config.batteryRef) {
+                    this.log("Adding a Battery Service to " + this.name);
+
+                    var batteryService = new Service.BatteryService();
+                    batteryService
+                        .getCharacteristic(Characteristic.BatteryLevel)
+                        .on('get', this.getBatteryValue.bind(this));
+                    batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+                        .on('get', this.getLowBatteryStatus.bind(this));
+                    services.push(batteryService);
+                }
                 break;
             }
             case "LeakSensor": {
                 var leakSensorService = new Service.LeakSensor();
                 leakSensorService
                     .getCharacteristic(Characteristic.LeakDetected)
-                    .on('get', this.getBinarySensorState.bind(this));
-                if (this.config.batteryRef) {
-                    leakSensorService
-                        .addCharacteristic(new Characteristic.StatusLowBattery())
-                        .on('get', this.getLowBatteryStatus.bind(this));
-                }
+                    .on('get', this.getBinarySensorState.bind(this))
+                    .isPrimaryService = true;
+
                 services.push(leakSensorService);
+
+                // If batteryRef has been defined, then add a battery service.
+                if (this.config.batteryRef) {
+                    this.log("Adding a Battery Service to " + this.name);
+
+                    var batteryService = new Service.BatteryService();
+                    batteryService
+                        .getCharacteristic(Characteristic.BatteryLevel)
+                        .on('get', this.getBatteryValue.bind(this));
+                    batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+                        .on('get', this.getLowBatteryStatus.bind(this));
+                    services.push(batteryService);
+                }
                 break;
             }
             case "OccupancySensor": {
                 var occupancySensorService = new Service.OccupancySensor();
                 occupancySensorService
                     .getCharacteristic(Characteristic.OccupancyDetected)
-                    .on('get', this.getBinarySensorState.bind(this));
-                if (this.config.batteryRef) {
-                    occupancySensorService
-                        .addCharacteristic(new Characteristic.StatusLowBattery())
-                        .on('get', this.getLowBatteryStatus.bind(this));
-                }
+                    .on('get', this.getBinarySensorState.bind(this))
+                    .isPrimaryService = true;
+
                 services.push(occupancySensorService);
+
+                // If batteryRef has been defined, then add a battery service.
+                if (this.config.batteryRef) {
+                    this.log("Adding a Battery Service to " + this.name);
+
+                    var batteryService = new Service.BatteryService();
+                    batteryService
+                        .getCharacteristic(Characteristic.BatteryLevel)
+                        .on('get', this.getBatteryValue.bind(this));
+                    batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+                        .on('get', this.getLowBatteryStatus.bind(this));
+                    services.push(batteryService);
+                }
                 break;
             }
             case "SmokeSensor": {
                 var smokeSensorService = new Service.SmokeSensor();
                 smokeSensorService
                     .getCharacteristic(Characteristic.SmokeDetected)
-                    .on('get', this.getBinarySensorState.bind(this));
-                if (this.config.batteryRef) {
-                    smokeSensorService
-                        .addCharacteristic(new Characteristic.StatusLowBattery())
-                        .on('get', this.getLowBatteryStatus.bind(this));
-                }
+                    .on('get', this.getBinarySensorState.bind(this))
+                    .isPrimaryService = true;
+
                 services.push(smokeSensorService);
+
+                // If batteryRef has been defined, then add a battery service.
+                if (this.config.batteryRef) {
+                    this.log("Adding a Battery Service to " + this.name);
+
+                    var batteryService = new Service.BatteryService();
+                    batteryService
+                        .getCharacteristic(Characteristic.BatteryLevel)
+                        .on('get', this.getBatteryValue.bind(this));
+                    batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+                        .on('get', this.getLowBatteryStatus.bind(this));
+                    services.push(batteryService);
+                }
                 break;
             }
             case "LightSensor": {
                 var lightSensorService = new Service.LightSensor();
                 lightSensorService
                     .getCharacteristic(Characteristic.CurrentAmbientLightLevel)
-                    .on('get', this.getValue.bind(this));
-                if (this.config.batteryRef) {
-                    lightSensorService
-                        .addCharacteristic(new Characteristic.StatusLowBattery())
-                        .on('get', this.getLowBatteryStatus.bind(this));
-                }
+                    .on('get', this.getValue.bind(this))
+                    .isPrimaryService = true;
+
                 services.push(lightSensorService);
+
+                // If batteryRef has been defined, then add a battery service.
+                if (this.config.batteryRef) {
+                    this.log("Adding a Battery Service to " + this.name);
+
+                    var batteryService = new Service.BatteryService();
+                    batteryService
+                        .getCharacteristic(Characteristic.BatteryLevel)
+                        .on('get', this.getBatteryValue.bind(this));
+                    batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+                        .on('get', this.getLowBatteryStatus.bind(this));
+                    services.push(batteryService);
+                }
                 break;
             }
             case "HumiditySensor": {
                 var humiditySensorService = new Service.HumiditySensor();
                 humiditySensorService
                     .getCharacteristic(Characteristic.CurrentRelativeHumidity)
-                    .on('get', this.getValue.bind(this));
-                if (this.config.batteryRef) {
-                    humiditySensorService
-                        .addCharacteristic(new Characteristic.StatusLowBattery())
-                        .on('get', this.getLowBatteryStatus.bind(this));
-                }
+                    .on('get', this.getValue.bind(this))
+                    .isPrimaryService = true;
+
                 services.push(humiditySensorService);
+
+                // If batteryRef has been defined, then add a battery service.
+                if (this.config.batteryRef) {
+                    this.log("Adding a Battery Service to " + this.name);
+
+                    var batteryService = new Service.BatteryService();
+                    batteryService
+                        .getCharacteristic(Characteristic.BatteryLevel)
+                        .on('get', this.getBatteryValue.bind(this));
+                    batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+                        .on('get', this.getLowBatteryStatus.bind(this));
+                    services.push(batteryService);
+                }
                 break;
             }
             case "Door": {
@@ -1262,6 +1370,8 @@ HomeSeerAccessory.prototype = {
                 batteryService
                     .getCharacteristic(Characteristic.StatusLowBattery)
                     .on('get', this.getLowBatteryStatus.bind(this));
+		batteryService
+                    .isPrimaryService = true;
                 services.push(batteryService);
 		break;
             }
@@ -1347,7 +1457,7 @@ HomeSeerAccessory.prototype = {
 		// If batteryRef has been defined, then add a battery service.
 		if (this.config.batteryRef)
 		{
-		this.log("Adding a Battery Service to Lock " + this.name);
+		this.log("Adding a Battery Service to " + this.name);
 		    
                 var batteryService = new Service.BatteryService();
                 batteryService
