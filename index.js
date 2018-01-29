@@ -1505,6 +1505,11 @@ HomeSeerAccessory.prototype = {
                     .getCharacteristic(Characteristic.On)
                     .on('set', this.setPowerState.bind(this))
                     .on('get', this.getPowerState.bind(this));
+		    
+		    // associate the HomeSeer device reference with each characteristic
+		    // for future polling update changes!
+		    lightbulbService.getCharacteristic(Characteristic.On).ref = this.config.ref;
+		    
 
                 this.statusCharacteristic = lightbulbService.getCharacteristic(Characteristic.On);
 
@@ -1514,8 +1519,17 @@ HomeSeerAccessory.prototype = {
                         .addCharacteristic(new Characteristic.Brightness())
                         .on('set', this.setBrightness.bind(this))
                         .on('get', this.getValue.bind(this));
-                }
 
+			// associate the HomeSeer device reference with each characteristic
+		    	// for future polling update changes!
+			lightbulbService.getCharacteristic(Characteristic.Brightness).ref = this.config.ref;
+                }
+		    
+		    // For debugging purposes.
+		    this.log("Adding new lightBulbService");
+		    this.log(lightbulbService);
+		    this.log("---------------------------");
+		    
                 services.push(lightbulbService);
                 break;
             }
