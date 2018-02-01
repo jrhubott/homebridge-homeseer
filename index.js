@@ -1700,10 +1700,6 @@ function updateCharacteristicsFromHSData()
 				{
 				case("Battery Level"):
 				{
-					//For Debugging Only
-					_HSValues[_services[i].characteristics[j].HSRef] =
-					HSValue = Math.floor(Math.random() * 100);
-					// End of Debugging code
 				_services[i].characteristics[j].value = HSValue;
 				break;
 				}
@@ -1718,6 +1714,22 @@ function updateCharacteristicsFromHSData()
 				// Update - add code so if HS says 99 show on Homekit Interface as 100%
 				_services[i].characteristics[j].value = ((HSValue == 99) ? 100 : HSValue);
 					break;
+				}
+				// for any Binary Sensor
+				case("Carbon Monoxide Detected"):
+				case("Carbon Dioxide Detected"):
+				case("Contact Sensor State")
+				case("Motion Detected"):
+				case("Leak Detected"):
+				case("Occupancy Detected"):
+				case("Smoke Detected"):
+				{
+				// If a set of onValues is defined, then HS value must be one of them. Else just non-zero.
+				if (_services[i].characteristics[j].onValues) 
+						{_services[i].characteristics[j].value = 
+						(_services[i].characteristics[j].onValues.indexOf(HSValue) != -1) ? true : false;
+					else { _services[i].characteristics[j].value = ((HSValue > 0) ? true : false )} 	
+						
 				}
 				default:
 				{
