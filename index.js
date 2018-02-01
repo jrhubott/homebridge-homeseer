@@ -1703,19 +1703,15 @@ function updateCharacteristicsFromHSData()
 				_services[i].characteristics[j].value = HSValue;
 				break;
 				}
-				case("On"):
-				{
-				_services[i].characteristics[j].value = 
-					( (HSValue != 0) ? true : false);
-					break;
-				}
 				case ("Brightness"):
 				{
 				// Update - add code so if HS says 99 show on Homekit Interface as 100%
 				_services[i].characteristics[j].value = ((HSValue == 99) ? 100 : HSValue);
 					break;
 				}
-				// for any Binary Sensor
+				
+				// for any Binary Sensor / Binary Choice
+				case("On"):
 				case("Carbon Monoxide Detected"):
 				case("Carbon Dioxide Detected"):
 				case("Contact Sensor State"):
@@ -1728,12 +1724,14 @@ function updateCharacteristicsFromHSData()
 				if (_services[i].characteristics[j].onValues) 
 						{_services[i].characteristics[j].value = 
 						(_services[i].characteristics[j].onValues.indexOf(HSValue) != -1) ? true : false;
-					else { _services[i].characteristics[j].value = ((HSValue > 0) ? true : false )} 	
+						}
+					else { _services[i].characteristics[j].value = ((HSValue > 0) ? true : false );} 	
 						
 				}
+				break;
 				default:
 				{
-				console.log("Unable to update value using global polling: Characteristic type not handled");
+				console.log("** WARNING ** - function updateCharacteristicsFromHSData unable to update value using global polling: Characteristic type not handled" + _services[i].characteristics[j].displayName);
 				break;
 				}
 				} // end switch
