@@ -1718,7 +1718,7 @@ function updateCharacteristicsFromHSData()
 				// for any Binary Sensor
 				case("Carbon Monoxide Detected"):
 				case("Carbon Dioxide Detected"):
-				case("Contact Sensor State")
+				case("Contact Sensor State"):
 				case("Motion Detected"):
 				case("Leak Detected"):
 				case("Occupancy Detected"):
