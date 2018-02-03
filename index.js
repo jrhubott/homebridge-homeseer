@@ -59,7 +59,6 @@ var Accessory, Service, Characteristic, UUIDGen;
 
 var pollingOffsetCounter=0;
 
-var _services = [];
 var _allAccessories = [];
 var _globalHSRefs = [];
 	_globalHSRefs.pushUnique = function(item) { if (this.indexOf(item) == -1) this.push(item); }
@@ -67,6 +66,8 @@ var _priorHSDeviceStatus = [];
 var _currentHSDeviceStatus = [];
 var _allStatusUrl = [];
 var _HSValues = [];
+
+var updateEmitter;
 
 module.exports = function (homebridge) {
     console.log("homebridge API version: " + homebridge.version);
@@ -99,6 +100,8 @@ function getHSValue(ref) {
 	return _HSValues[ref];
 }
 
+
+
 function HomeSeerPlatform(log, config, api) {
     this.log = log;
     this.config = config;
@@ -119,11 +122,11 @@ function HomeSeerPlatform(log, config, api) {
 }
 
 HomeSeerPlatform.prototype = {
+	
     accessories: function (callback) {
-        var that = this;
-
-		
-        var foundAccessories = [];
+            var foundAccessories = [];
+				
+			var that = this;
 
         if (this.config.events) {
             this.log("Creating HomeSeer events.");
@@ -174,9 +177,9 @@ HomeSeerPlatform.prototype = {
                 } //end else.
 		    
 // This is the new Polling Mechanism to poll all at once.		
-			this.accessoriesUpdate = pollingtoevent(
+			updateEmitter = pollingtoevent(
 				function (done) {
-					this.log ("************************");
+					that.log ("************************");
 					// Now do the poll
 							httpRequest(_allStatusUrl, 'GET', function (error, response, body) {
 							if (error) {
@@ -184,11 +187,11 @@ HomeSeerPlatform.prototype = {
 								callback(error, 0);
 							}
 							else {
-								this.log (body.substring(1, 150));
+
 								_priorHSDeviceStatus = _currentHSDeviceStatus;
 								_currentHSDeviceStatus = JSON.parse(body).Devices;
 								if (_priorHSDeviceStatus == _currentHSDeviceStatus) this.log("HS Devices Unchanged");
-								this.log("Number of devices retrieved in poll is " + _currentHSDeviceStatus.length);
+								this.log("Device Data for %s HomeSeer devices retrieved from HomeSeer ",  _currentHSDeviceStatus.length);
 							}
 							}.bind(this)); // end of the HTTP Request
 					done(null, _currentHSDeviceStatus);
@@ -196,9 +199,9 @@ HomeSeerPlatform.prototype = {
 					);	//end polling-to-event function
 			
 
-			this.accessoriesUpdate.on("poll",
+			updateEmitter.on("poll",
 				function(HSDevices) { 
-
+					that.log("----------- Debug: Entered function accessoriesUpdate.on -----------");
 				// Now Create an array where the HomeSeer Value is tied to the array index location. e.g., ref 101's value is at location 101.
 					for (var index in HSDevices)
 					{
@@ -207,9 +210,14 @@ HomeSeerPlatform.prototype = {
 					} //endfor
 				
 					// Then scan each device characteristic and update it.
-					updateCharacteristicsFromHSData();
+					// that.log("calling updateCharacteristicsFromHSData");
+					// that.log("that.foundAccessories is defined? " + that.foundAccessories);
+					updateCharacteristicsFromHSData(that);
 				} // end function HSDevices
 			);
+			this.log("------------------ Debug ------------------");
+			this.log(foundAccessories);
+			this.log ("----------------------");
 			
 			callback(foundAccessories);
             }
@@ -245,7 +253,7 @@ function HomeSeerAccessory(log, platformConfig, accessoryConfig, status) {
     if (this.config.offValue)
         this.offValue = this.config.offValue;
 
-    var that = this;
+    var that = this; // May be unused?
 
     if (this.config.poll==null)
     {
@@ -318,6 +326,49 @@ HomeSeerAccessory.prototype = {
         //Poll for updated status
         // this.pollForUpdate();
     },
+	
+	// setHSValue function expects to be bound by .bind() to a HomeKit Service Object Characteristic!
+	setHSValue: function (level, callback) {
+        var url;
+		
+			switch(this.props.format)
+			{
+				case("int"):
+				{
+					if ((this.props.unit == "percentage") && ( level == 100) ) // Z-Wave doesn't like 100%. Force to 99.
+					{level =  99; 
+					}
+					// may want to force-modify the HS polled data to reflect new value up until the next poll!
+					break;
+				}
+				case("float"):
+				{
+					// Double-Check on this to make sure that HomeSeer always reports in celsius!
+					// if ((character.props.unit == "celsius") ) newValue = ((newValue -32) * (5 / 9));
+					// character.updateValue( newValue);
+					break;
+				}
+			}; //end switch
+		
+		 url = this.access_url + "request=controldevicebyvalue&ref=" + this.HSRef + "&value=" +level;
+		 _HSValues[this.HSRef] = level; // force previously retrieved HomeSeer data to match the value being sent. This will be then re-polled next time.
+
+
+        httpRequest(url, 'GET', function (error, response, body) {
+            if (error) {
+                // console.log("This = : " + this);
+				var propnames =Object.getOwnPropertyNames(this);
+				console.log(propnames);
+				// console.log(this.name + ': HomeSeer setHSValue function failed: %s', error.message);
+                callback(error);
+            }
+            else {
+                console.log(this.name + ': HomeSeer setHSValue function succeeded!');
+                callback();
+            }
+        }.bind(this));
+		updateEmitter.emit("poll");
+    },
 
     getPowerState: function (callback) {
             if (!this.ref) {
@@ -382,7 +433,6 @@ HomeSeerAccessory.prototype = {
     },
 
     getValue: function (callback) {
-        var url = this.status_url;
 	
 		if(this.ref) 
 			callback(null, getHSValue(this.ref))
@@ -412,9 +462,6 @@ HomeSeerAccessory.prototype = {
                 callback();
             }
             }.bind(this));
-
-        //Poll for updated status
-        // this.pollForUpdate();
             
         }.bind(this), 300);
 
@@ -648,8 +695,6 @@ HomeSeerAccessory.prototype = {
             }
         }.bind(this));
 
-        //Poll for updated status
-        this.pollForUpdate();
     },
 
     getObstructionDetected: function (callback) {
@@ -729,8 +774,6 @@ HomeSeerAccessory.prototype = {
             }
         }.bind(this));
 
-        //Poll for updated status
-        this.pollForUpdate();
     },
 
     getSecuritySystemCurrentState: function (callback) {
@@ -787,8 +830,6 @@ HomeSeerAccessory.prototype = {
             }
         }.bind(this));
 
-        //Poll for updated status
-        this.pollForUpdate();
     },
 
     getPositionState: function (callback) {
@@ -796,6 +837,7 @@ HomeSeerAccessory.prototype = {
     },
 
     getServices: function () {
+		this.log("---------------getServices function called --------- Debug ----------------------------");
         var services = []
 
         var informationService = new Service.AccessoryInformation();
@@ -872,6 +914,7 @@ HomeSeerAccessory.prototype = {
             case "TemperatureSensor": {
                 var temperatureSensorService = new Service.TemperatureSensor();
 				temperatureSensorService.isPrimaryService = true;
+				temperatureSensorService.displayName = "Service.TemperatureSensor";
 
                 temperatureSensorService
                     .getCharacteristic(Characteristic.CurrentTemperature)
@@ -895,12 +938,15 @@ HomeSeerAccessory.prototype = {
 					batteryService
                         .getCharacteristic(Characteristic.BatteryLevel)
 						.HSRef = this.config.batteryRef;
-                    batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-                        .on('get', this.getBatteryValue.bind(this));
-                    batteryService
+						
+					batteryService
                         .getCharacteristic(Characteristic.StatusLowBattery)
-                        .on('get', this.getLowBatteryStatus.bind(this));
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.batteryThreshold = this.config.batteryThreshold;						
+						
                     services.push(batteryService);
                 }
                 break;
@@ -922,15 +968,19 @@ HomeSeerAccessory.prototype = {
 
                     var batteryService = new Service.BatteryService();
 					
+					
 					batteryService
                         .getCharacteristic(Characteristic.BatteryLevel)
 						.HSRef = this.config.batteryRef;
-                    batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-                        .on('get', this.getBatteryValue.bind(this));
-                    batteryService
+						
+					batteryService
                         .getCharacteristic(Characteristic.StatusLowBattery)
-                        .on('get', this.getLowBatteryStatus.bind(this));
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.batteryThreshold = this.config.batteryThreshold;						
+						
                     services.push(batteryService);
                 }
                 break;
@@ -952,15 +1002,19 @@ HomeSeerAccessory.prototype = {
 
                     var batteryService = new Service.BatteryService();
 					
+					
 					batteryService
                         .getCharacteristic(Characteristic.BatteryLevel)
 						.HSRef = this.config.batteryRef;
-                    batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-                        .on('get', this.getBatteryValue.bind(this));
-                    batteryService
+						
+					batteryService
                         .getCharacteristic(Characteristic.StatusLowBattery)
-                        .on('get', this.getLowBatteryStatus.bind(this));
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.batteryThreshold = this.config.batteryThreshold;						
+						
                     services.push(batteryService);
                 }
                 break;
@@ -982,15 +1036,19 @@ HomeSeerAccessory.prototype = {
 
                     var batteryService = new Service.BatteryService();
 					
+					
 					batteryService
                         .getCharacteristic(Characteristic.BatteryLevel)
 						.HSRef = this.config.batteryRef;
-                    batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-                        .on('get', this.getBatteryValue.bind(this));
-                    batteryService
+						
+					batteryService
                         .getCharacteristic(Characteristic.StatusLowBattery)
-                        .on('get', this.getLowBatteryStatus.bind(this));
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.batteryThreshold = this.config.batteryThreshold;						
+						
                     services.push(batteryService);
                 }
 
@@ -1013,15 +1071,19 @@ HomeSeerAccessory.prototype = {
 
                     var batteryService = new Service.BatteryService();
 					
+					
 					batteryService
                         .getCharacteristic(Characteristic.BatteryLevel)
 						.HSRef = this.config.batteryRef;
-                    batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-                        .on('get', this.getBatteryValue.bind(this));
-                    batteryService
+						
+					batteryService
                         .getCharacteristic(Characteristic.StatusLowBattery)
-                        .on('get', this.getLowBatteryStatus.bind(this));
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.batteryThreshold = this.config.batteryThreshold;						
+						
                     services.push(batteryService);
                 }
                 break;
@@ -1041,15 +1103,19 @@ HomeSeerAccessory.prototype = {
 
                     var batteryService = new Service.BatteryService();
 					
+					
 					batteryService
                         .getCharacteristic(Characteristic.BatteryLevel)
 						.HSRef = this.config.batteryRef;
-                    batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-                        .on('get', this.getBatteryValue.bind(this));
-                    batteryService
+						
+					batteryService
                         .getCharacteristic(Characteristic.StatusLowBattery)
-                        .on('get', this.getLowBatteryStatus.bind(this));
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.batteryThreshold = this.config.batteryThreshold;						
+						
                     services.push(batteryService);
                 }
                 break;
@@ -1069,15 +1135,19 @@ HomeSeerAccessory.prototype = {
 
                     var batteryService = new Service.BatteryService();
 					
+					
 					batteryService
                         .getCharacteristic(Characteristic.BatteryLevel)
 						.HSRef = this.config.batteryRef;
-                    batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-                        .on('get', this.getBatteryValue.bind(this));
-                    batteryService
+						
+					batteryService
                         .getCharacteristic(Characteristic.StatusLowBattery)
-                        .on('get', this.getLowBatteryStatus.bind(this));
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.batteryThreshold = this.config.batteryThreshold;						
+						
                     services.push(batteryService);
                 }
                 break;
@@ -1097,15 +1167,19 @@ HomeSeerAccessory.prototype = {
 
                     var batteryService = new Service.BatteryService();
 					
+					
 					batteryService
                         .getCharacteristic(Characteristic.BatteryLevel)
 						.HSRef = this.config.batteryRef;
-                    batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-                        .on('get', this.getBatteryValue.bind(this));
-                    batteryService
+						
+					batteryService
                         .getCharacteristic(Characteristic.StatusLowBattery)
-                        .on('get', this.getLowBatteryStatus.bind(this));
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.batteryThreshold = this.config.batteryThreshold;						
+						
                     services.push(batteryService);
                 }
                 break;
@@ -1125,15 +1199,19 @@ HomeSeerAccessory.prototype = {
 
                     var batteryService = new Service.BatteryService();
 					
+					
 					batteryService
                         .getCharacteristic(Characteristic.BatteryLevel)
 						.HSRef = this.config.batteryRef;
-                    batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-                        .on('get', this.getBatteryValue.bind(this));
-                    batteryService
+						
+					batteryService
                         .getCharacteristic(Characteristic.StatusLowBattery)
-                        .on('get', this.getLowBatteryStatus.bind(this));
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.batteryThreshold = this.config.batteryThreshold;						
+						
                     services.push(batteryService);
                 }
                 break;
@@ -1153,15 +1231,19 @@ HomeSeerAccessory.prototype = {
 
                     var batteryService = new Service.BatteryService();
 					
+					
 					batteryService
                         .getCharacteristic(Characteristic.BatteryLevel)
 						.HSRef = this.config.batteryRef;
-                    batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-                        .on('get', this.getBatteryValue.bind(this));
-                    batteryService
+						
+					batteryService
                         .getCharacteristic(Characteristic.StatusLowBattery)
-                        .on('get', this.getLowBatteryStatus.bind(this));
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.batteryThreshold = this.config.batteryThreshold;						
+						
                     services.push(batteryService);
                 }
                 break;
@@ -1241,15 +1323,20 @@ HomeSeerAccessory.prototype = {
 				
                 this.config.batteryRef = this.ref;
 	
+					
 					batteryService
                         .getCharacteristic(Characteristic.BatteryLevel)
 						.HSRef = this.config.batteryRef;
-                    batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-                        .on('get', this.getBatteryValue.bind(this));
-                    batteryService
+						
+					batteryService
                         .getCharacteristic(Characteristic.StatusLowBattery)
-                        .on('get', this.getLowBatteryStatus.bind(this));
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.batteryThreshold = this.config.batteryThreshold;						
+						
+                    services.push(batteryService);
 
                 services.push(batteryService);
 		break;
@@ -1322,6 +1409,7 @@ HomeSeerAccessory.prototype = {
                 this.config.lockRef = this.ref;
                 var lockService = new Service.LockMechanism();
 				lockService.isPrimaryService = true;
+				lockService.displayName = "Service.LockMechanism";
 				
                 lockService
                     .getCharacteristic(Characteristic.LockCurrentState)
@@ -1343,16 +1431,20 @@ HomeSeerAccessory.prototype = {
                     this.log("Adding a Battery Service to " + this.name);
 
                     var batteryService = new Service.BatteryService();
+					batteryService.displayName = "Service.BatteryService";
 					
 					batteryService
                         .getCharacteristic(Characteristic.BatteryLevel)
 						.HSRef = this.config.batteryRef;
-                    batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-						.on('get', this.getBatteryValue.bind(this));
-                    batteryService
+						
+					batteryService
                         .getCharacteristic(Characteristic.StatusLowBattery)
-                        .on('get', this.getLowBatteryStatus.bind(this));
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.batteryThreshold = this.config.batteryThreshold;
+						
                     services.push(batteryService);
                 }
 		    			
@@ -1391,6 +1483,7 @@ HomeSeerAccessory.prototype = {
 
                 var lightbulbService = new Service.Lightbulb();
 				lightbulbService.isPrimaryService = true;
+				lightbulbService.displayName = "Service.Lightbulb"
 				
 				lightbulbService
 					.getCharacteristic(Characteristic.On)
@@ -1398,8 +1491,8 @@ HomeSeerAccessory.prototype = {
 				
                 lightbulbService
                     .getCharacteristic(Characteristic.On)
-                    .on('set', this.setPowerState.bind(this))
-                    .on('get', this.getPowerState.bind(this));
+                    .on('set', this.setPowerState.bind(this));
+                    // .on('get', this.getPowerState.bind(this));
 		    
                 if (this.config.can_dim == null || this.config.can_dim == true) {
 					
@@ -1407,15 +1500,17 @@ HomeSeerAccessory.prototype = {
                     lightbulbService
                         .addCharacteristic(new Characteristic.Brightness())
 						.HSRef = this.config.ref;
+					
+					lightbulbService
+						.getCharacteristic(Characteristic.Brightness)
+						.access_url = this.access_url;
 						
 					lightbulbService
 						.getCharacteristic(Characteristic.Brightness)
-                        .on('set', this.setBrightness.bind(this))
-                        .on('get', this.getValue.bind(this));
+                        .on('set', this.setHSValue.bind(lightbulbService.getCharacteristic(Characteristic.Brightness)));
+                        // .on('get', this.getValue.bind(this));
                 }
 				
-				this.statusCharacteristic = lightbulbService.getCharacteristic(Characteristic.On);
-
                 services.push(lightbulbService);
 
                 break;
@@ -1429,11 +1524,7 @@ HomeSeerAccessory.prototype = {
 
         this.log(this.name + ": statusUpdateCount=" + this.config.statusUpdateCount);
 
-        services[services.length - 1].accessory = this;
-	    _allAccessories.push(this);
-
-        //Update the global service list
-        _services.push(services[services.length - 1]);
+		_allAccessories.push(services);
 
         return services;
     }
@@ -1516,63 +1607,76 @@ HomeSeerEvent.prototype = {
     }
 }
 
-function updateCharacteristicsFromHSData()
+function updateCharacteristicsFromHSData(that)
 {
 	var HSValue = 0;
-	
-	for (var i = 0, len = _services.length; i < len; i++) {
+	that.log("Updated Characteristics from HS Data");
+	that.log("Found accessories defined: " + (_allAccessories && _allAccessories.length));
 
-		for (var j in _services[i].characteristics) {
-			//Only Update Characteristics if they have an associated HomeSeer Reference
-			if (_services[i].characteristics[j].HSRef) 	{
+	for (var aIndex = 0; aIndex < _allAccessories.length; aIndex++)
+	{
+		var thisAccessory = _allAccessories[aIndex];
+		for(var sIndex = 0; sIndex < thisAccessory.length; sIndex++)
+		{
+		var service = thisAccessory[sIndex];
+
+			for(var cIndex = 0; cIndex < service.characteristics.length; cIndex++)
+			{
+				var character = service.characteristics[cIndex];
+				if (character.HSRef)
+				{
+					
+				var newValue = getHSValue(character.HSRef);
+
+				that.log("Service %s: %s has updatable characteristic %s: %s and HS Ref: %s and old value %s", sIndex, service.displayName, cIndex, character.displayName, character.HSRef, character.value);
+				// that.log(character.props);
 				
-				HSValue = getHSValue(_services[i].characteristics[j].HSRef)
 				
-				switch(_services[i].characteristics[j].displayName)
+				switch(character.props.format)
 				{
-				case("Battery Level"):
-				{
-				_services[i].characteristics[j].value = HSValue;
-				break;
-				}
-				case ("Brightness"):
-				{
-				// Update - add code so if HS says 99 show on Homekit Interface as 100%
-				_services[i].characteristics[j].value = ((HSValue == 99) ? 100 : HSValue);
-					break;
-				}
-				
-				// for any Binary Sensor / Binary Choice
-				case("On"):
-				case("Carbon Monoxide Detected"):
-				case("Carbon Dioxide Detected"):
-				case("Contact Sensor State"):
-				case("Motion Detected"):
-				case("Leak Detected"):
-				case("Occupancy Detected"):
-				case("Smoke Detected"):
-				{
-				// If a set of onValues is defined, then HS value must be one of them. Else just non-zero.
-				if (_services[i].characteristics[j].onValues) 
-						{_services[i].characteristics[j].value = 
-						(_services[i].characteristics[j].onValues.indexOf(HSValue) != -1) ? true : false;
+					case("bool"):
+					{
+						character.updateValue( newValue ? true : false);
+						break;
+					}
+					
+					case("int"):
+					{
+						if ((character.props.unit == "percentage") && ( newValue == 99) ) newValue=100;
+						character.updateValue(newValue);
+						break;
+					}
+					case("float"):
+					{
+						// Double-Check on this to make sure that HomeSeer always reports in celsius!
+						if ((character.props.unit == "celsius") ) newValue = ((newValue -32) * (5 / 9));
+						character.updateValue( newValue);
+						break;
+					}
+					case("uint8"):
+					{
+						if(character.displayName == "Status Low Battery")
+						{
+							that.log("Battery Threshold status of battery level %s with threshold %s", newValue, character.batteryThreshold);
+							var lowBatteryStatus = (newValue < character.batteryThreshold) ? true : false;
+							character.updateValue(lowBatteryStatus);
+							break;
 						}
-					else { _services[i].characteristics[j].value = ((HSValue > 0) ? true : false );} 	
 						
+					}
+					default:
+					{
+						that.log("** WARNING ** -- Possible Incorrect Value Assignment for service %s, with characteristic %s", service.displayName, character.displayName);
+						character.updateValue( newValue);
+					}
+				}; //end switch
+				
+				that.log("   %s value after update is: %s", character.displayName, character.value);
+				
 				}
-				break;
-				default:
-				{
-				console.log("** WARNING ** - function updateCharacteristicsFromHSData unable to update value using global polling: Characteristic type not handled" + _services[i].characteristics[j].displayName);
-				break;
-				}
-				} // end switch
-								
-				console.log("Updated " + _services[i].accessory.name);
-				console.log("     characteristic: " + _services[i].characteristics[j].displayName + " : With Value " + _services[i].characteristics[j].value + " for HS Reference " +  _services[i].characteristics[j].HSRef);
-			} // endif
-		} //end for j			
-	} // end for i
+			}
+		}
+	} 
 }
 					
 
