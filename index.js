@@ -929,26 +929,6 @@ HomeSeerAccessory.prototype = {
 
                 services.push(temperatureSensorService);
 
-                // If batteryRef has been defined, then add a battery service.
-                if (this.config.batteryRef) {
-                    this.log("Adding a Battery Service to " + this.name);
-
-                    var batteryService = new Service.BatteryService();
-					
-					batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.batteryThreshold = this.config.batteryThreshold;						
-						
-                    services.push(batteryService);
-                }
                 break;
             }
             case "CarbonMonoxideSensor": {
@@ -962,27 +942,6 @@ HomeSeerAccessory.prototype = {
 
                 services.push(carbonMonoxideSensorService);
 
-                // If batteryRef has been defined, then add a battery service.
-                if (this.config.batteryRef) {
-                    this.log("Adding a Battery Service to " + this.name);
-
-                    var batteryService = new Service.BatteryService();
-					
-					
-					batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.batteryThreshold = this.config.batteryThreshold;						
-						
-                    services.push(batteryService);
-                }
                 break;
             }
             case "CarbonDioxideSensor": {
@@ -996,27 +955,7 @@ HomeSeerAccessory.prototype = {
 
                 services.push(carbonDioxideSensorService);
 
-                // If batteryRef has been defined, then add a battery service.
-                if (this.config.batteryRef) {
-                    this.log("Adding a Battery Service to " + this.name);
 
-                    var batteryService = new Service.BatteryService();
-					
-					
-					batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.batteryThreshold = this.config.batteryThreshold;						
-						
-                    services.push(batteryService);
-                }
                 break;
             }
             case "ContactSensor": {
@@ -1029,28 +968,6 @@ HomeSeerAccessory.prototype = {
                     .HSRef = this.config.ref;
 
                 services.push(contactSensorService);
-
-                // If batteryRef has been defined, then add a battery service.
-                if (this.config.batteryRef) {
-                    this.log("Adding a Battery Service to " + this.name);
-
-                    var batteryService = new Service.BatteryService();
-					
-					
-					batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.batteryThreshold = this.config.batteryThreshold;						
-						
-                    services.push(batteryService);
-                }
 
                 break;
             }
@@ -1065,27 +982,6 @@ HomeSeerAccessory.prototype = {
 
                 services.push(motionSensorService);
 
-                // If batteryRef has been defined, then add a battery service.
-                if (this.config.batteryRef) {
-                    this.log("Adding a Battery Service to " + this.name);
-
-                    var batteryService = new Service.BatteryService();
-					
-					
-					batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.batteryThreshold = this.config.batteryThreshold;						
-						
-                    services.push(batteryService);
-                }
                 break;
             }
             case "LeakSensor": {
@@ -1097,27 +993,6 @@ HomeSeerAccessory.prototype = {
 
                 services.push(leakSensorService);
 
-                // If batteryRef has been defined, then add a battery service.
-                if (this.config.batteryRef) {
-                    this.log("Adding a Battery Service to " + this.name);
-
-                    var batteryService = new Service.BatteryService();
-					
-					
-					batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.batteryThreshold = this.config.batteryThreshold;						
-						
-                    services.push(batteryService);
-                }
                 break;
             }
             case "OccupancySensor": {
@@ -1129,27 +1004,6 @@ HomeSeerAccessory.prototype = {
 
                 services.push(occupancySensorService);
 
-                // If batteryRef has been defined, then add a battery service.
-                if (this.config.batteryRef) {
-                    this.log("Adding a Battery Service to " + this.name);
-
-                    var batteryService = new Service.BatteryService();
-					
-					
-					batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.batteryThreshold = this.config.batteryThreshold;						
-						
-                    services.push(batteryService);
-                }
                 break;
             }
             case "SmokeSensor": {
@@ -1161,27 +1015,6 @@ HomeSeerAccessory.prototype = {
 
                 services.push(smokeSensorService);
 
-                // If batteryRef has been defined, then add a battery service.
-                if (this.config.batteryRef) {
-                    this.log("Adding a Battery Service to " + this.name);
-
-                    var batteryService = new Service.BatteryService();
-					
-					
-					batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.batteryThreshold = this.config.batteryThreshold;						
-						
-                    services.push(batteryService);
-                }
                 break;
             }
             case "LightSensor": {
@@ -1193,27 +1026,6 @@ HomeSeerAccessory.prototype = {
 
                 services.push(lightSensorService);
 
-                // If batteryRef has been defined, then add a battery service.
-                if (this.config.batteryRef) {
-                    this.log("Adding a Battery Service to " + this.name);
-
-                    var batteryService = new Service.BatteryService();
-					
-					
-					batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.batteryThreshold = this.config.batteryThreshold;						
-						
-                    services.push(batteryService);
-                }
                 break;
             }
             case "HumiditySensor": {
@@ -1225,27 +1037,6 @@ HomeSeerAccessory.prototype = {
 
                 services.push(humiditySensorService);
 
-                // If batteryRef has been defined, then add a battery service.
-                if (this.config.batteryRef) {
-                    this.log("Adding a Battery Service to " + this.name);
-
-                    var batteryService = new Service.BatteryService();
-					
-					
-					batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.batteryThreshold = this.config.batteryThreshold;						
-						
-                    services.push(batteryService);
-                }
                 break;
             }
             case "Door": {
@@ -1423,30 +1214,7 @@ HomeSeerAccessory.prototype = {
 		    
 				lockService.isPrimaryService = true;
 		    
-		services.push(lockService);
-		this.statusCharacteristic = lockService.getCharacteristic(Characteristic.LockCurrentState);
-
-		// If batteryRef has been defined, then add a battery service.
-                if (this.config.batteryRef) {
-                    this.log("Adding a Battery Service to " + this.name);
-
-                    var batteryService = new Service.BatteryService();
-					batteryService.displayName = "Service.BatteryService";
-					
-					batteryService
-                        .getCharacteristic(Characteristic.BatteryLevel)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.HSRef = this.config.batteryRef;
-						
-					batteryService
-                        .getCharacteristic(Characteristic.StatusLowBattery)
-						.batteryThreshold = this.config.batteryThreshold;
-						
-                    services.push(batteryService);
-                }
+				services.push(lockService);
 		    			
                 break;
             }
@@ -1516,6 +1284,28 @@ HomeSeerAccessory.prototype = {
                 break;
             }
         }
+		
+		 // If batteryRef has been defined, then add a battery service.
+                if (this.config.batteryRef) {
+                    this.log("Adding a Battery Service to " + this.name);
+
+                    var batteryService = new Service.BatteryService();
+					
+					
+					batteryService
+                        .getCharacteristic(Characteristic.BatteryLevel)
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.HSRef = this.config.batteryRef;
+						
+					batteryService
+                        .getCharacteristic(Characteristic.StatusLowBattery)
+						.batteryThreshold = this.config.batteryThreshold;						
+						
+                    services.push(batteryService);
+                }
 
         if (this.config.statusUpdateCount == null)
            this.config.statusUpdateCount = 20;
