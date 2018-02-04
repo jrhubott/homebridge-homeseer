@@ -14,11 +14,12 @@
     "url": "https://github.com/jvmahon/homebridge-homeseer/issues"
   },
   "engines": {
-    "node": ">=0.12.0",
+    "node": ">=4.8.0",
     "homebridge": ">=0.4.0"
   },
   "dependencies": {
     "request" : ">=2.83.0",
-    "polling-to-event": ">=2.1.0"
+    "polling-to-event": ">=2.1.0",
+    "request-promise-native": ">=1.0.0"
   }
 }
