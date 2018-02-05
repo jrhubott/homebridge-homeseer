@@ -184,7 +184,7 @@ HomeSeerPlatform.prototype = {
 							httpRequest(_allStatusUrl, 'GET', function (error, response, body) {
 							if (error) {
 								this.log("** Warning ** - Polling HomeSeer Failed");
-								callback(error, 0);
+								// callback(error, 0);
 							}
 							else {
 
@@ -297,7 +297,7 @@ HomeSeerAccessory.prototype = {
     pollForUpdate: function () {
         this.log(this.name + ": Polling for status update " + this.config.statusUpdateCount + " times");
         this.statusUpdateCount=0;
-        // this.pollForStatusUpdate.resume();
+
     },
 
     setPowerState: function (powerOn, callback) {
@@ -486,8 +486,7 @@ HomeSeerAccessory.prototype = {
             }
         }.bind(this));
 
-        //Poll for updated status
-        // this.pollForUpdate();
+
     },
 
     getTemperature: function (callback) {
@@ -567,8 +566,6 @@ HomeSeerAccessory.prototype = {
             }
         }.bind(this));
 
-        //Poll for updated status
-        this.pollForUpdate();
     },
 
     getThermostatTargetTemperature: function (callback) {
@@ -612,8 +609,6 @@ HomeSeerAccessory.prototype = {
             }
         }.bind(this));
 
-        //Poll for updated status
-        this.pollForUpdate();
     },
 
     getThermostatTemperatureDisplayUnits: function (callback) {
@@ -840,12 +835,7 @@ HomeSeerAccessory.prototype = {
 		this.log("---------------getServices function called --------- Debug ----------------------------");
         var services = []
 
-        var informationService = new Service.AccessoryInformation();
-        informationService
-            .setCharacteristic(Characteristic.Manufacturer, "HomeSeer")
-            .setCharacteristic(Characteristic.Model, this.model)
-            .setCharacteristic(Characteristic.SerialNumber, "HS " + this.config.type + " ref " + this.ref);
-        services.push(informationService);
+
 
 
         switch (this.config.type) {
@@ -1306,13 +1296,16 @@ HomeSeerAccessory.prototype = {
 						
                     services.push(batteryService);
                 }
-
-        if (this.config.statusUpdateCount == null)
-           this.config.statusUpdateCount = 20;
-        
-        this.statusUpdateCount = this.config.statusUpdateCount-1;
-
-        this.log(this.name + ": statusUpdateCount=" + this.config.statusUpdateCount);
+				
+		// And add a basic Accessory Information service		
+        var informationService = new Service.AccessoryInformation();
+        informationService
+            .setCharacteristic(Characteristic.Manufacturer, "HomeSeer")
+            .setCharacteristic(Characteristic.Model, this.model)
+            .setCharacteristic(Characteristic.SerialNumber, "HS " + this.config.type + " ref " + this.ref);
+        services.push(informationService);
+		// 
+		
 
 		_allAccessories.push(services);
 
