@@ -215,9 +215,9 @@ HomeSeerPlatform.prototype = {
 					updateCharacteristicsFromHSData(that);
 				} // end function HSDevices
 			);
-			this.log("------------------ Debug ------------------");
-			this.log(foundAccessories);
-			this.log ("----------------------");
+			// this.log("------------------ Debug ------------------");
+			// this.log(foundAccessories);
+			// this.log ("----------------------");
 			
 			callback(foundAccessories);
             }
@@ -1280,7 +1280,7 @@ HomeSeerAccessory.prototype = {
                     this.log("Adding a Battery Service to " + this.name);
 
                     var batteryService = new Service.BatteryService();
-					
+					batteryService.displayName = "Service.BatteryService";
 					
 					batteryService
                         .getCharacteristic(Characteristic.BatteryLevel)
@@ -1393,8 +1393,7 @@ HomeSeerEvent.prototype = {
 function updateCharacteristicsFromHSData(that)
 {
 	var HSValue = 0;
-	that.log("Updated Characteristics from HS Data");
-	that.log("Found accessories defined: " + (_allAccessories && _allAccessories.length));
+	that.log("Updated Characteristics from HS Data for %s accessories.", (_allAccessories && _allAccessories.length));
 
 	for (var aIndex = 0; aIndex < _allAccessories.length; aIndex++)
 	{
@@ -1411,7 +1410,7 @@ function updateCharacteristicsFromHSData(that)
 					
 				var newValue = getHSValue(character.HSRef);
 
-				that.log("Service %s: %s has updatable characteristic %s: %s and HS Ref: %s and old value %s", sIndex, service.displayName, cIndex, character.displayName, character.HSRef, character.value);
+				// that.log("Service %s: %s has updatable characteristic %s: %s and HS Ref: %s and old value %s", sIndex, service.displayName, cIndex, character.displayName, character.HSRef, character.value);
 				// that.log(character.props);
 				
 				
@@ -1454,7 +1453,7 @@ function updateCharacteristicsFromHSData(that)
 					}
 				}; //end switch
 				
-				that.log("   %s value after update is: %s", character.displayName, character.value);
+				// that.log("   %s value after update is: %s", character.displayName, character.value);
 				
 				}
 			}
