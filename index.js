@@ -54,6 +54,8 @@
 var request = require("request");
 var pollingtoevent = require("polling-to-event")
 
+var isValidUUID = require("./lib/isValudUUID");
+
 var http = require('http');
 var Accessory, Service, Characteristic, UUIDGen;
 
