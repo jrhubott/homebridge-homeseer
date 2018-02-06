@@ -53,7 +53,7 @@
 //var Characteristic = require("../api").homebridge.hap.Characteristic;
 var request = require("request");
 var pollingtoevent = require("polling-to-event");
-var promiseHTTP = require("request-response-native");
+var promiseHTTP = require("request-promise-native");
 
 // var isValidUUID = require("./lib/UUIDcheck");
 
