@@ -67,6 +67,8 @@ var _currentHSDeviceStatus = [];
 var _allStatusUrl = [];
 var _HSValues = [];
 
+var _accessURL;
+
 var updateEmitter;
 
 module.exports = function (homebridge) {
@@ -99,7 +101,13 @@ function httpRequest(url, method, callback) {
 function getHSValue(ref) {
 	return _HSValues[ref];
 }
-
+function setHSValue(ref, level)
+{
+		// This function is used to temporarily 'fake' a HomeSeer poll update.
+		// Used when, e.g., you set a new value of an accessory in HomeKit - this provides a fast update to the
+		// Retrieved HomeSeer device values which will then be "corrected / confirmed" on the next poll.
+		_HSValues[ref] = level;
+}
 
 
 function HomeSeerPlatform(log, config, api) {
@@ -201,7 +209,7 @@ HomeSeerPlatform.prototype = {
 
 			updateEmitter.on("poll",
 				function(HSDevices) { 
-					that.log("----------- Debug: Entered function accessoriesUpdate.on -----------");
+				//	that.log("----------- Debug: Entered function accessoriesUpdate.on -----------");
 				// Now Create an array where the HomeSeer Value is tied to the array index location. e.g., ref 101's value is at location 101.
 					for (var index in HSDevices)
 					{
@@ -212,7 +220,7 @@ HomeSeerPlatform.prototype = {
 					// Then scan each device characteristic and update it.
 					// that.log("calling updateCharacteristicsFromHSData");
 					// that.log("that.foundAccessories is defined? " + that.foundAccessories);
-					updateCharacteristicsFromHSData(that);
+					updateAllFromHSData(that);
 				} // end function HSDevices
 			);
 			// this.log("------------------ Debug ------------------");
@@ -238,6 +246,7 @@ function HomeSeerAccessory(log, platformConfig, accessoryConfig, status) {
     this.statusCharacteristic = null;
 
     this.access_url = platformConfig["host"] + "/JSON?";
+	_accessURL = this.access_url;
     this.control_url = this.access_url + "request=controldevicebyvalue&ref=" + this.ref + "&value=";
     this.status_url = this.access_url + "request=getstatus&ref=" + this.ref;
 
@@ -332,13 +341,16 @@ HomeSeerAccessory.prototype = {
 	
 	// setHSValue function expects to be bound by .bind() to a HomeKit Service Object Characteristic!
 	setHSValue: function (level, callback) {
-        var url;
-		var transmitValue = level;
+		var url;
+
+
 		
 		// For Debugging
-		console.log ("** Debug ** - Called setHSValue with UUID = ", +this.UUID);
-				// console.log ("** Debug ** access_url is %s", access_url);
-		// console.log ("** Debug ** that.access_url is %s", that.access_url);
+		console.log ("** Debug ** - Called setHSValue with level %s for UUID %s", level, this.UUID);
+		// console.log ("** Debug ** access_url is %s", _accessURL);
+		
+		var transmitValue = level;
+
 		
 		if (!this.UUID) {
 			var error = "*** PROGRAMMING ERROR **** - setHSValue called by something without a UUID";
@@ -407,11 +419,13 @@ HomeSeerAccessory.prototype = {
 					case(Characteristic.Brightness.UUID ): 
 					{
 						// Z-Wave uses 99 as its maximum value, so convert 100% to a 99
-						transmitValue = (transmitValue = 100) ? 99 : transmitValue;
+						transmitValue = (transmitValue == 100) ? 99 : level;
 						
 						// "Adjust" the HomeSeer value received from prior poll under assumption update will succeed. 
 						// Will get corrected on next poll if it doesn't!
-						_HSValues[this.HSRef] = transmitValue; 
+						setHSValue(this.HSRef, transmitValue); 
+						this.updateValue(transmitValue); // Assume success. This gets corrected on next poll if assumption is wrong.
+						console.log ("          ** Debug ** called for Brightness update with level %s then set to transmitValue %s", level, transmitValue); 
 
 						break;
 					}
@@ -481,7 +495,41 @@ HomeSeerAccessory.prototype = {
 					//  case(Characteristic.OccupancyDetected.UUID ):  
 					case(Characteristic.On.UUID ):  
 					{
-						transmitValue = 255;
+						// For devices such as dimmers, HomeKit sends both "on" and "brighness" when you adjust brightness.
+						//  But Z-Wave only expects a brighness value. So, if the device is already on (non-Zero ZWave vallue)
+						// then don't send again.
+						// And Only send "on" if the device isn't already on.
+						// Also, because a dimmer will set to its "last value" and that won't be known until the next poll from HomeSeer
+						// Assume a last-value of about 50% to avoid too much jumping of the brightness slider.
+						// HomeKit level == false means turn off, level == true means turn on.
+						
+						// transmitValue = ( (level == true) ? 255 : 0);
+						
+						
+						
+						if (level == false) 
+							{transmitValue = 0 ; 
+							setHSValue(this.HSRef, 0); // assume success and set to 0 to avoid jumping of any associated dimmer / range slider.
+						}
+						else
+						{
+							if(getHSValue(this.HSRef) == 0)	
+							{
+								// if it is off, turn on to last level.
+								transmitValue = 255;
+								setHSValue(this.HSRef, 50);
+							}
+							else
+							{
+								// if it is on then use current value.
+								// don't use the "255" value because Z-Wave dimmer's can be ramping up/down 
+								// and use of set-last-value (255)  will cause jumping of the HomeKit Dimmer slider interface
+								// if a poll occurs during ramping.
+								transmitValue = getHSValue(this.HSRef);
+							}
+						}
+						
+						
 						break;
 					}
 					//  case(Characteristic.OpticalZoom.UUID ):  
@@ -567,19 +615,20 @@ HomeSeerAccessory.prototype = {
 
 				}
 		
+		if (isNaN(transmitValue)) 
+			{console.log ("*** PROGRAMMING ERROR **** - Service or Characteristic UUID not handled by setHSValue routine");
+			callback("Programming Error in function setHSValue. Attempt to send value to HomeSeer that is not a number");
+			};
 	
-		 url = this.access_url + "request=controldevicebyvalue&ref=" + this.HSRef + "&value=" + transmitValue;
-		 
+		 url = _accessURL + "request=controldevicebyvalue&ref=" + this.HSRef + "&value=" + transmitValue;
+ 
 		 // For debugging
 		 console.log ("Debug - Called setHSValue has URL = %s", url);
 
 
         httpRequest(url, 'GET', function (error, response, body) {
             if (error) {
-                // console.log("This = : " + this);
-				var propnames =Object.getOwnPropertyNames(this);
-				console.log(propnames);
-				// console.log(this.name + ': HomeSeer setHSValue function failed: %s', error.message);
+                console.log(this.name + ': HomeSeer setHSValue function failed: %s', error.message);
                 callback(error);
             }
             else {
@@ -587,6 +636,8 @@ HomeSeerAccessory.prototype = {
                 callback();
             }
         }.bind(this));
+		
+		
 		updateEmitter.emit("poll");
     },
 
@@ -1694,7 +1745,7 @@ HomeSeerAccessory.prototype = {
 				
                 lightbulbService
                     .getCharacteristic(Characteristic.On)
-                    .on('set', this.setPowerState.bind(this));
+                    .on('set', this.setHSValue.bind(lightbulbService.getCharacteristic(Characteristic.On)));
                     // .on('get', this.getPowerState.bind(this));
 		    
                 if (this.config.can_dim == null || this.config.can_dim == true) {
@@ -1835,10 +1886,17 @@ HomeSeerEvent.prototype = {
     }
 }
 
-function updateCharacteristicsFromHSData(that)
+function updateServicesFromHSData(services)
+{
+	return 1;
+}
+
+// Loop over all Accessories and find each Service block, then update individual Characteristics structures.
+function updateAllFromHSData(that)
 {
 	var HSValue = 0;
-	that.log("Updated Characteristics from HS Data for %s accessories.", (_allAccessories && _allAccessories.length));
+	// For Debugging
+	// that.log("Updating Characteristics from HS Data for %s accessories.", (_allAccessories && _allAccessories.length));
 
 	for (var aIndex = 0; aIndex < _allAccessories.length; aIndex++)
 	{
@@ -1855,40 +1913,46 @@ function updateCharacteristicsFromHSData(that)
 					
 				var newValue = getHSValue(character.HSRef);
 
-				// that.log("Service %s: %s has updatable characteristic %s: %s and HS Ref: %s and old value %s", sIndex, service.displayName, cIndex, character.displayName, character.HSRef, character.value);
-				// that.log(character.props);
-				
-				
-				switch(character.props.format)
+				switch(true)
 				{
-					case("bool"):
+					case(character.props.format == "bool"):
 					{
 						character.updateValue( newValue ? true : false);
 						break;
 					}
 					
-					case("int"):
+					case(character.props.format == "int"):
 					{
 						if ((character.props.unit == "percentage") && ( newValue == 99) ) newValue=100;
 						character.updateValue(newValue);
 						break;
 					}
-					case("float"):
+					case(character.props.format == "float"):
 					{
 						// Double-Check on this to make sure that HomeSeer always reports in celsius!
 						if ((character.props.unit == "celsius") ) newValue = ((newValue -32) * (5 / 9));
 						character.updateValue( newValue);
 						break;
 					}
-					case("uint8"):
+					case(character.UUID == Characteristic.StatusLowBattery.UUID):
 					{
-						if(character.displayName == "Status Low Battery")
-						{
-							that.log("Battery Threshold status of battery level %s with threshold %s", newValue, character.batteryThreshold);
+							// that.log("Battery Threshold status of battery level %s with threshold %s", newValue, character.batteryThreshold);
 							var lowBatteryStatus = (newValue < character.batteryThreshold) ? true : false;
 							character.updateValue(lowBatteryStatus);
 							break;
-						}
+					}
+					case(character.UUID == Characteristic.On.UUID):
+					{
+							character.updateValue( ((newValue !=0 ) ? true: false) );
+							break;
+					}
+					case(character.UUID == Characteristic.BatteryLevel.UUID):
+					{
+							character.updateValue(newValue);
+							break;
+					}
+					case(character.props.format == "uint8"):
+					{
 						
 					}
 					default:
@@ -1900,11 +1964,11 @@ function updateCharacteristicsFromHSData(that)
 				
 				// that.log("   %s value after update is: %s", character.displayName, character.value);
 				
-				}
-			}
-		}
-	} 
-}
+				} // end if
+			} // end for cIndex
+		} // end for sIndex
+	} // end for aindex
+} // end function
 					
 
 module.exports.platform = HomeSeerPlatform;
