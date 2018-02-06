@@ -334,6 +334,19 @@ HomeSeerAccessory.prototype = {
 	setHSValue: function (level, callback) {
         var url;
 		var transmitValue = level;
+		
+		// For Debugging
+		console.log ("** Debug ** - Called setHSValue with UUID = ", +this.UUID);
+				// console.log ("** Debug ** access_url is %s", access_url);
+		// console.log ("** Debug ** that.access_url is %s", that.access_url);
+		
+		if (!this.UUID) {
+			var error = "*** PROGRAMMING ERROR **** - setHSValue called by something without a UUID";
+			console.log ("*** PROGRAMMING ERROR **** - setHSValue called by something without a UUID");
+			console.log (this);                
+			callback(error);
+			
+		}
 
 			// Add Any Special Handling Based on the UUID
 			// Uncomment any UUID's actually used!
@@ -453,6 +466,7 @@ HomeSeerAccessory.prototype = {
 							case 0: transmitValue = (this.HSunlockValue) ? this.transmitValue : 0;
 							case 1: transmitValue = (this.HSlockValue)   ? this.HSlockValue   : 255;
 						}
+						console.log("Set TransmitValue for lock charactristic %s to %s ", this.displayName, transmitValue);
 						break;
 					}
 					//  case(Characteristic.Logs.UUID ):  
@@ -468,6 +482,7 @@ HomeSeerAccessory.prototype = {
 					case(Characteristic.On.UUID ):  
 					{
 						transmitValue = 255;
+						break;
 					}
 					//  case(Characteristic.OpticalZoom.UUID ):  
 					//  case(Characteristic.OutletInUse.UUID ):  
@@ -491,6 +506,9 @@ HomeSeerAccessory.prototype = {
 					//  case(Characteristic.SecuritySystemAlarmType.UUID ):  
 					//  case(Characteristic.SecuritySystemCurrentState.UUID ):  
 					case(Characteristic.SecuritySystemTargetState.UUID ):  
+					{
+						break;
+					}
 					//  case(Characteristic.SelectedRTPStreamConfiguration.UUID ):  
 					//  case(Characteristic.SerialNumber.UUID ):  
 					//  case(Characteristic.ServiceLabelIndex.UUID ):  
@@ -548,9 +566,12 @@ HomeSeerAccessory.prototype = {
 					}
 
 				}
-
+		
 	
 		 url = this.access_url + "request=controldevicebyvalue&ref=" + this.HSRef + "&value=" + transmitValue;
+		 
+		 // For debugging
+		 console.log ("Debug - Called setHSValue has URL = %s", url);
 
 
         httpRequest(url, 'GET', function (error, response, body) {
@@ -1618,7 +1639,7 @@ HomeSeerAccessory.prototype = {
                     .on('get', this.getLockCurrentState.bind(this));
                 lockService
                     .getCharacteristic(Characteristic.LockTargetState)
-					.on('set', this.setHSValue.bind(lockService.getCharacteristic.LockTargetState));
+					.on('set', this.setHSValue.bind(lockService.getCharacteristic(Characteristic.LockTargetState)));
                     // .on('set', this.setLockTargetState.bind(this));
 					
 				if (this.config.unlockValue)
