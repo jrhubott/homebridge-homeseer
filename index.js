@@ -72,6 +72,8 @@ var _HSValues = [];
 
 var _accessURL;
 
+var _statusObjects = []; // Holds things that can be changed when HomeSeer values change!
+
 var updateEmitter;
 
 module.exports = function (homebridge) {
@@ -1664,7 +1666,8 @@ HomeSeerAccessory.prototype = {
                 lockService
                     .getCharacteristic(Characteristic.LockTargetState)
                     .on('get', this.getLockCurrentState.bind(this));
-					
+				
+				// Target needs to be updated to match current state after a HomeSeer change.
 				lockService
                     .getCharacteristic(Characteristic.LockTargetState)
 					.HSRef = this.config.ref;
@@ -1682,7 +1685,10 @@ HomeSeerAccessory.prototype = {
 				lockService.isPrimaryService = true;
 		    
 				services.push(lockService);
-		    			
+				
+		    	_statusObjects.push(lockService.getCharacteristic(Characteristic.LockCurrentState));
+				_statusObjects.push(lockService.getCharacteristic(Characteristic.LockTargetState));
+								
                 break;
             }
             case "SecuritySystem": {
@@ -1728,6 +1734,8 @@ HomeSeerAccessory.prototype = {
                     .getCharacteristic(Characteristic.On)
                     .on('set', this.setHSValue.bind(lightbulbService.getCharacteristic(Characteristic.On)));
                     // .on('get', this.getPowerState.bind(this));
+					
+
 		    
                 if (this.config.can_dim == null || this.config.can_dim == true) {
 					
@@ -1745,6 +1753,10 @@ HomeSeerAccessory.prototype = {
                         .on('set', this.setHSValue.bind(lightbulbService.getCharacteristic(Characteristic.Brightness)));
                         // .on('get', this.getValue.bind(this));
                 }
+				
+				// For an alternate status update
+				_statusObjects.push(lightbulbService.getCharacteristic(Characteristic.On));
+				_statusObjects.push(lightbulbService.getCharacteristic(Characteristic.Brightness));
 				
                 services.push(lightbulbService);
 
@@ -1772,6 +1784,9 @@ HomeSeerAccessory.prototype = {
 						.batteryThreshold = this.config.batteryThreshold;						
 						
                     services.push(batteryService);
+					
+					_statusObjects.push(batteryService.getCharacteristic(Characteristic.BatteryLevel));
+					_statusObjects.push(batteryService.getCharacteristic(Characteristic.batteryThreshold));					
                 }
 				
 		// And add a basic Accessory Information service		
@@ -1884,15 +1899,13 @@ function updateCharacteristicFromHSData(characteristicObject)
 			case(characteristicObject.UUID == Characteristic.StatusLowBattery.UUID):
 			{
 				// that.log("Battery Threshold status of battery level %s with threshold %s", newValue, characteristicObject.batteryThreshold);
-				var lowBatteryStatus = (newValue < characteristicObject.batteryThreshold) ? true : false;
-				characteristicObject.updateValue(lowBatteryStatus);
+				characteristicObject.updateValue((newValue < characteristicObject.batteryThreshold) ? true : false);
 				break;
 			}
 			case(characteristicObject.UUID == Characteristic.LockCurrentState.UUID):
 			{
 				// Set to 0 = UnSecured, 1 - Secured, 2 = Jammed.
 				var lockState = (newValue == 0) ? 0 : (newValue == 255 ? 1 : 2);
-									
 				characteristicObject.updateValue(lockState);
 				break;
 			}
@@ -1965,6 +1978,8 @@ function updateAccssoryFromHSData(accessory)
 // Loop over all Accessories on the Bridge then update each accessory.
 function updateAllFromHSData()
 {
+	// For Debugging
+	console.log("Total Pushed Characteristic Objects are %s", _statusObjects.length);
 	// Loop over each Accessory in the array of Accessories and send the group of service objects to be updated.
 	for (var aIndex = 0; aIndex < _allAccessories.length; aIndex++)
 	{
@@ -1974,6 +1989,9 @@ function updateAllFromHSData()
 
 function updateCharacteristic(characteristicObject)
 {
+	
+
+	
 	if (characteristicObject.HSRef == null) 
 	{
 		console.log("** Programming Error ** - updateCharacteristic passed characteristic object %s with displayName %s but without a HomeSeer reference HSREf ", characteristicObject.UUID, characteristicObject.displayName);
