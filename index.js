@@ -1906,17 +1906,40 @@ function updateCharacteristicFromHSData(characteristicObject)
 			case(characteristicObject.UUID == Characteristic.LockCurrentState.UUID):
 			{
 				// Set to 0 = UnSecured, 1 - Secured, 2 = Jammed.
-				var lockState = (newValue == 0) ? 0 : (newValue == 255 ? 1 : 2);
-				characteristicObject.updateValue(lockState);
+				
+				console.log("** Debug ** - Attempting LockCurrentState update with value %s", newValue);
+				
+				switch(newValue)
+				{
+					case(0):
+					{
+					characteristicObject.updateValue(0);
+						break;
+					}
+					case(255):
+					{
+						characteristicObject.updateValue(1);
+						break;
+					}
+					default:
+					{
+						characteristicObject.updateValue(2)
+						break;
+					}
+				}
+				console.log("** Debug ** - Finished LockCurrentState update");
+
 				break;
 			}
+			/*
 			case(characteristicObject.UUID == Characteristic.LockTargetState.UUID):
 			{
 				// Set to 0 = UnSecured, 1 - Secured, 2 = Jammed.
-				var lockState = (newValue == 0) ? 0 : 255;
+				var lockState = (newValue == 0) ? 0 : 1;
 				characteristicObject.updateValue(lockState);
 				break;
 			}
+			*/
 			// case(characteristicObject.UUID == Characteristic.LockTargetState.UUID):
 			
 			case( characteristicObject.UUID == Characteristic.CarbonDioxideDetected.UUID ):
