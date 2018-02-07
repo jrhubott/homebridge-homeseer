@@ -1,5 +1,48 @@
 'use strict';
 
+//
+// HomeSeer Platform Shim for HomeBridge by Jean-Michel Joudrier - (stipus at stipus dot com)
+// V0.1 - 2015/10/07
+// - Initial version
+// V0.2 - 2015/10/10
+// - Occupancy sensor fix
+// V0.3 - 2015/10/11
+// - Added TemperatureUnit=F|C option to temperature sensors
+// - Added negative temperature support to temperature sensors
+// V0.4 - 2015/10/12
+// - Added thermostat support
+// V0.5 - 2015/10/12
+// - Added Humidity sensor support
+// V0.6 - 2015/10/12
+// - Added Battery support
+// - Added low battery support for all sensors
+// - Added HomeSeer event support (using HomeKit switches...)
+// V0.7 - 2015/10/13
+// - You can add multiple HomeKit devices for the same HomeSeer device reference
+// - Added CarbonMonoxide sensor
+// - Added CarbonDioxide sensor
+// - Added onValues option to all binary sensors
+// V0.8 - 2015/10/14
+// - Added uuid_base parameter to all accessories
+// V0.9 - 2015/10/16
+// - Smoke sensor battery fix
+// - Added offEventGroup && offEventName to events (turn <event> on launches one HS event. turn <event> off can launch another HS event)
+// - Added GarageDoorOpener support
+// - Added Lock support
+// V0.10 - 2015/10/29
+// - Added Security System support
+// - Added Window support
+// - Added Window Covering support
+// - Added obstruction support to doors, windows, and windowCoverings
+// V0.11 - 2018/01/13
+// - Added battery support to Lock devices and added added battery services to other devices.
+// V0.12 - New Pollinng
+//
+// Remember to add platform to config.json. 
+//
+// You can get HomeSeer Device References by clicking a HomeSeer device name, then 
+// choosing the Advanced Tab.
+//
 // The uuid_base parameter is valid for all events and accessories. 
 // If you set this parameter to some unique identifier, the HomeKit accessory ID will be based on uuid_base instead of the accessory name.
 // It is then easier to change the accessory name without messing the HomeKit database.
@@ -9,12 +52,12 @@
 //var Service = require("../api").homebridge.hap.Service;
 //var Characteristic = require("../api").homebridge.hap.Characteristic;
 var request = require("request");
-var pollingtoevent = require("polling-to-event");
+// var pollingtoevent = require("polling-to-event");
 var promiseHTTP = require("request-promise-native");
 
 // var isValidUUID = require("./lib/UUIDcheck");
 
-// var http = require('http');
+var http = require('http');
 var Accessory, Service, Characteristic, UUIDGen;
 
 var pollingOffsetCounter=0;
@@ -79,8 +122,8 @@ function HomeSeerPlatform(log, config, api) {
     if(config)
 		if (this.config["poll"]==null)
 		{
-        this.config["poll"] = 15;
-		this.config["platformPoll"] = 15;
+        this.config["poll"] = 60;
+		this.config["platformPoll"] = 60;
 		}
 		else
 		{
@@ -98,17 +141,16 @@ HomeSeerPlatform.prototype = {
 				
 			var that = this;
 
-			if (this.config.events) {
-				this.log("Creating HomeSeer events.");
-				for (var i = 0; i < this.config.events.length; i++) {
-					var event = new HomeSeerEvent(that.log, that.config, that.config.events[i]);
-					foundAccessories.push(event);
-				}
-			} // endif
+        if (this.config.events) {
+            this.log("Creating HomeSeer events.");
+            for (var i = 0; i < this.config.events.length; i++) {
+                var event = new HomeSeerEvent(that.log, that.config, that.config.events[i]);
+                foundAccessories.push(event);
+            }
+        }
 
         this.log("Fetching HomeSeer devices.");
         var refList = "";
-		
         for (var i = 0; i < this.config.accessories.length; i++) {
             refList = refList + this.config.accessories[i].ref;
 			
@@ -127,8 +169,6 @@ HomeSeerPlatform.prototype = {
 		this.log("Global Status URL is " + _allStatusUrl);
 		
         var url = this.config["host"] + "/JSON?request=getstatus&ref=" + refList;
-		
-
         httpRequest(url, "GET", function (error, response, body) {
             if (error) {
                 this.log('HomeSeer status function failed: %s', error.message);
@@ -148,49 +188,43 @@ HomeSeerPlatform.prototype = {
                         } //endfor
                     }
                 } //end else.
-			callback(foundAccessories);
-            }
-        }.bind(this));
-		
-    
-	
+		    
 // This is the new Polling Mechanism to poll all at once.	
 
-			updateEmitter = pollingtoevent(
-				function (done) {
+			updateEmitter = setInterval(
+				function () 
+					{
 					that.log ("************************");
 					// Now do the poll
 						promiseHTTP(_allStatusUrl)
-							.then( function(htmlString) {
-									_currentHSDeviceStatus = JSON.parse(htmlString).Devices;
-									console.log("Polled HomeSeer, Retrieved %s values",  _currentHSDeviceStatus.length);
-							}).catch(function(err)
-								{
-									console.log("HomeSeer poll attempt failed with error %s", err);
-								}
-							);
+							.then( function(htmlString) 
+									{
+										_currentHSDeviceStatus = JSON.parse(htmlString).Devices;
+										console.log("Polled HomeSeer, Retrieved %s values",  _currentHSDeviceStatus.length);
+										for (var index in _currentHSDeviceStatus)
+										{
+											_HSValues[_currentHSDeviceStatus[index].ref] = _currentHSDeviceStatus[index].value;
+										} //endfor
 
-					done(null, null);
-					}.bind(this), {interval: this.config.platformPoll * 1000 }
-					);	//end polling-to-event function
+										updateAllFromHSData();
+									
+									}
+								) // end then
+								.catch(function(err)
+									{
+										console.log("HomeSeer poll attempt failed with error %s", err);
+									}
+								);//end catch
 
-
-			updateEmitter.on("poll",
-				function() { 
-				// Now Create an array where the HomeSeer Value is tied to the array index location. e.g., ref 101's value is at location 101.
-					for (var index in _currentHSDeviceStatus)
-					{
-						_HSValues[_currentHSDeviceStatus[index].ref] = _currentHSDeviceStatus[index].value;
-					} //endfor
-
-					updateAllFromHSData();
-				} 
-			); // end updateEmitter.on	
+					}, this.config.platformPoll * 1000 
+					);	//end polling loop
 			
-			// ============================
-	
-	} // end the accessories function
-} // ends the function prototype
+			callback(foundAccessories);
+            }
+        }.bind(this));
+
+    }
+}
 
 function HomeSeerAccessory(log, platformConfig, accessoryConfig, status) {
     this.log = log;
@@ -264,11 +298,6 @@ HomeSeerAccessory.prototype = {
 	
 	// setHSValue function expects to be bound by .bind() to a HomeKit Service Object Characteristic!
 	setHSValue: function (level, callback) {
-			// This function should be bound to either a Homekit Characteristic object (most common case), or a Service Object.
-			// The function converts value received from HomeKit to one acceptable on HomeSeer then sends the value to HomeSeer.
-			// Conversion is based on the UUID of object to which setHSValue is bound.
-			
-			
 		var url;
 		var callbackValue = 1;
 		var transmitValue = level;
@@ -287,15 +316,13 @@ HomeSeerAccessory.prototype = {
 			
 		}
 
-
+			// Add Any Special Handling Based on the UUID
 			// Uncomment any UUID's actually used!
 				switch( this.UUID)
 				{
-
-					//  case(Service.Lightbulb.UUID ):  
 					// The following characteristics all are stored as percentages in HomeKit, but 1-99 in HomeSeer
 					// So scale these values.
-					case(Characteristic.RotationSpeed.UUID ):  
+
 					case(Characteristic.Brightness.UUID ): 
 					{
 						transmitValue = (transmitValue == 100) ? 99 : level;
@@ -308,6 +335,7 @@ HomeSeerAccessory.prototype = {
 						break;
 					}
 					
+
 					case(Characteristic.LockTargetState.UUID ):
 					{
 						switch(level)
@@ -318,7 +346,7 @@ HomeSeerAccessory.prototype = {
 						console.log("Set TransmitValue for lock characteristic %s to %s ", this.displayName, transmitValue);
 						break;
 					}
-
+	
 					case(Characteristic.On.UUID ):  
 					{
 						// For devices such as dimmers, HomeKit sends both "on" and "brighness" when you adjust brightness.
@@ -360,6 +388,7 @@ HomeSeerAccessory.prototype = {
 						
 						break;
 					}
+
 					default:
 					{
 						console.log ("*** PROGRAMMING ERROR **** - Service or Characteristic UUID not handled by setHSValue routine");
@@ -422,6 +451,7 @@ HomeSeerAccessory.prototype = {
         }.bind(this));
     },
 
+	/*
     getValue: function (callback) {
 		
 		var returnValue = getHSValue(this.HSRef); 
@@ -429,62 +459,12 @@ HomeSeerAccessory.prototype = {
 		//The following switch statement "massages" the returnValue based on the service or Characteristic type.
 				switch( this.UUID)
 				{
-					case( Service.AccessoryInformation.UUID ):  
-					case( Service.AirPurifier.UUID ):  
-					case( Service.AirQualitySensor.UUID ):  
-					case( Service.BatteryService.UUID ):  
-					case( Service.CameraRTPStreamManagement.UUID ):  
-					case( Service.CarbonDioxideSensor.UUID ):  
-					case( Service.CarbonMonoxideSensor.UUID ):  
-					case( Service.ContactSensor.UUID ):  
-					case( Service.Door.UUID ):  
-					case( Service.Doorbell.UUID ):  
-					case( Service.Fan.UUID ):  
-					case( Service.Fanv2.UUID ):  
-					case( Service.FilterMaintenance.UUID ):  
-					case( Service.Faucet.UUID ):  
-					case( Service.GarageDoorOpener.UUID ):  
-					case( Service.HeaterCooler.UUID ):  
-					case( Service.HumidifierDehumidifier.UUID ):  
-					case( Service.HumiditySensor.UUID ):  
-					case( Service.IrrigationSystem.UUID ):  
-					case( Service.LeakSensor.UUID ):  
-					case( Service.LightSensor.UUID ):  
-					case( Service.Lightbulb.UUID ): 
-					case( Service.LockManagement.UUID ):  
-					case( Service.LockMechanism.UUID ):  
-					case( Service.Microphone.UUID ):  
-					case( Service.MotionSensor.UUID ):  
-					case( Service.OccupancySensor.UUID ):  
-					case( Service.Outlet.UUID ):  
-					case( Service.SecuritySystem.UUID ):  
-					case( Service.ServiceLabel.UUID ):  
-					case( Service.Slat.UUID ):  
-					case( Service.SmokeSensor.UUID ):  
-					case( Service.Speaker.UUID ):  
-					case( Service.StatelessProgrammableSwitch.UUID ):  
-					case( Service.Switch.UUID ):  
-					case( Service.TemperatureSensor.UUID ):  
-					case( Service.Thermostat.UUID ):  
-					case( Service.Valve.UUID ):  
-					case( Service.Window.UUID ):  
-					case( Service.WindowCovering.UUID ):  
-					case( Characteristic.Active.UUID ):  
-					case( Characteristic.AdministratorOnlyAccess.UUID ):  
-					case( Characteristic.AirParticulateDensity.UUID ):  
-					case( Characteristic.AirParticulateSize.UUID ):  
-					case( Characteristic.AirQuality.UUID ):  
-					case( Characteristic.AudioFeedback.UUID ):
-					{
-						returnValue = -1;
-						break;
-					}
-						
 					case( Characteristic.BatteryLevel.UUID ):  
 					{
 						returnValue = getHSValue(this.HSRef);
 						break;
 					}
+					
 					// Next grouping is for characteristics using a percentage.
 					case( Characteristic.Brightness.UUID ): 
 					{
@@ -493,151 +473,27 @@ HomeSeerAccessory.prototype = {
 						break;
 					}
 					
-					case( Characteristic.CarbonDioxideDetected.UUID ):  
-					case( Characteristic.CarbonDioxideLevel.UUID ):  
-					case( Characteristic.CarbonDioxidePeakLevel.UUID ):  
-					case( Characteristic.CarbonMonoxideDetected.UUID ):  
-					case( Characteristic.CarbonMonoxideLevel.UUID ):  
-					case( Characteristic.CarbonMonoxidePeakLevel.UUID ):  
-					case( Characteristic.ChargingState.UUID ):  
-					case( Characteristic.ColorTemperature.UUID ):  
-					case( Characteristic.ContactSensorState.UUID ):  
-					case( Characteristic.CoolingThresholdTemperature.UUID ):  
-					case( Characteristic.CurrentAirPurifierState.UUID ):  
-					case( Characteristic.CurrentAmbientLightLevel.UUID ):  
-					case( Characteristic.CurrentDoorState.UUID ):  
-					case( Characteristic.CurrentFanState.UUID ):  
-					case( Characteristic.CurrentHeaterCoolerState.UUID ):  
-					case( Characteristic.CurrentHeatingCoolingState.UUID ):  
-					case( Characteristic.CurrentHorizontalTiltAngle.UUID ):  
-					case( Characteristic.CurrentHumidifierDehumidifierState.UUID ):  
-					case( Characteristic.CurrentPosition.UUID ):  
-					case( Characteristic.CurrentRelativeHumidity.UUID ):  
-					case( Characteristic.CurrentSlatState.UUID ):  
-					{
-						returnValue = -1;
-						break;
-					}
 					case( Characteristic.CurrentTemperature.UUID ):  
 					{
 						// HomeKit uses celsius, so convert Fahrenheit to Celsius.
 						if (this.HStemperatureUnit && (this.HStemperatureUnit == "F")) returnValue = (ReturnValue -32 )* (5/9);
 						break;
 					}
-					case( Characteristic.CurrentTiltAngle.UUID ):  
-					case( Characteristic.CurrentVerticalTiltAngle.UUID ):  
-					case( Characteristic.DigitalZoom.UUID ):  
-					case( Characteristic.FilterChangeIndication.UUID ):  
-					case( Characteristic.FilterLifeLevel.UUID ):  
-					case( Characteristic.FirmwareRevision.UUID ):  
-					case( Characteristic.HardwareRevision.UUID ):  
-					case( Characteristic.HeatingThresholdTemperature.UUID ):  
-					case( Characteristic.HoldPosition.UUID ):  
-					case( Characteristic.Hue.UUID ):  
-					case( Characteristic.Identify.UUID ):  
-					case( Characteristic.ImageMirroring.UUID ):  
-					case( Characteristic.ImageRotation.UUID ):  
-					case( Characteristic.InUse.UUID ):  
-					case( Characteristic.IsConfigured.UUID ):  
-					case( Characteristic.LeakDetected.UUID ):  
-					case( Characteristic.LockControlPoint.UUID ):  
-					case( Characteristic.LockCurrentState.UUID ):  
-					case( Characteristic.LockLastKnownAction.UUID ):  
-					case( Characteristic.LockManagementAutoSecurityTimeout.UUID ):  
-					case( Characteristic.LockPhysicalControls.UUID ):  
-					case( Characteristic.LockTargetState.UUID ):  
-					case( Characteristic.Logs.UUID ):  
-					case( Characteristic.Manufacturer.UUID ):  
-					case( Characteristic.Model.UUID ):  
-					case( Characteristic.MotionDetected.UUID ):  
-					case( Characteristic.Mute.UUID ):  
-					case( Characteristic.Name.UUID ):  
-					case( Characteristic.NightVision.UUID ):  
-					case( Characteristic.NitrogenDioxideDensity.UUID ):  
-					case( Characteristic.ObstructionDetected.UUID ):  
 					
-					{
-						returnValue = -1;
-						break;
-					}
-						
-						
 					// The following items all use a binary state.
-					case( Characteristic.OccupancyDetected.UUID ):  
+					
 					case( Characteristic.On.UUID ):
 					{
 						returnValue = (getHSValue(this.HSRef) != 0) ? true : false;
 						break;
 					}						
-					case( Characteristic.OpticalZoom.UUID ):  
-					case( Characteristic.OutletInUse.UUID ):  
-					case( Characteristic.OzoneDensity.UUID ):  
-					case( Characteristic.PairSetup.UUID ):  
-					case( Characteristic.PairVerify.UUID ):  
-					case( Characteristic.PairingFeatures.UUID ):  
-					case( Characteristic.PairingPairings.UUID ):  
-					case( Characteristic.PM10Density.UUID ):  
-					case( Characteristic.PM2_5Density.UUID ):  
-					case( Characteristic.PositionState.UUID ):  
-					case( Characteristic.ProgramMode.UUID ):  
-					case( Characteristic.ProgrammableSwitchEvent.UUID ):  
-					case( Characteristic.RelativeHumidityDehumidifierThreshold.UUID ):  
-					case( Characteristic.RelativeHumidityHumidifierThreshold.UUID ):  
-					case( Characteristic.RemainingDuration.UUID ):  
-					case( Characteristic.ResetFilterIndication.UUID ):  
-					case( Characteristic.RotationDirection.UUID ):  
-					case( Characteristic.RotationSpeed.UUID ):  
-					case( Characteristic.Saturation.UUID ):  
-					case( Characteristic.SecuritySystemAlarmType.UUID ):  
-					case( Characteristic.SecuritySystemCurrentState.UUID ):  
-					case( Characteristic.SecuritySystemTargetState.UUID ):  
-					case( Characteristic.SelectedRTPStreamConfiguration.UUID ):  
-					case( Characteristic.SerialNumber.UUID ):  
-					case( Characteristic.ServiceLabelIndex.UUID ):  
-					case( Characteristic.ServiceLabelNamespace.UUID ):  
-					case( Characteristic.SetDuration.UUID ):  
-					case( Characteristic.SetupEndpoints.UUID ):  
-					case( Characteristic.SlatType.UUID ):  
-					case( Characteristic.SmokeDetected.UUID ):  
-					case( Characteristic.StatusActive.UUID ):  
-					case( Characteristic.StatusFault.UUID ):  
-					case( Characteristic.StatusJammed.UUID ):  
-					case( Characteristic.StatusLowBattery.UUID ):  
-					case( Characteristic.StatusTampered.UUID ):  
-					case( Characteristic.StreamingStatus.UUID ):  
-					case( Characteristic.SulphurDioxideDensity.UUID ):  
-					case( Characteristic.SupportedAudioStreamConfiguration.UUID ):  
-					case( Characteristic.SupportedRTPConfiguration.UUID ):  
-					case( Characteristic.SupportedVideoStreamConfiguration.UUID ):  
-					case( Characteristic.SwingMode.UUID ):  
-					case( Characteristic.TargetAirPurifierState.UUID ):  
-					case( Characteristic.TargetAirQuality.UUID ):  
-					case( Characteristic.TargetDoorState.UUID ):  
-					case( Characteristic.TargetFanState.UUID ):  
-					case( Characteristic.TargetHeaterCoolerState.UUID ):  
-					case( Characteristic.TargetHeatingCoolingState.UUID ):  
-					case( Characteristic.TargetHorizontalTiltAngle.UUID ):  
-					case( Characteristic.TargetHumidifierDehumidifierState.UUID ):  
-					case( Characteristic.TargetPosition.UUID ):  
-					case( Characteristic.TargetRelativeHumidity.UUID ):  
-					case( Characteristic.TargetSlatState.UUID ):  
-					case( Characteristic.TargetTemperature.UUID ):  
-					case( Characteristic.TargetTiltAngle.UUID ):  
-					case( Characteristic.TargetVerticalTiltAngle.UUID ):  
-					case( Characteristic.TemperatureDisplayUnits.UUID ):  
-					case( Characteristic.ValveType.UUID ):  
-					case( Characteristic.Version.UUID ):  
-					case( Characteristic.VOCDensity.UUID ):  
-					case( Characteristic.Volume.UUID ):  
-					case( Characteristic.WaterLevel.UUID ):  
+
 					default:
 					{
 						returnValue = -1;
 						this.log ("*** PROGRAMMING ERROR **** -  UUID not handled:" + this.UUID);
 					}
-
 				}		
-		
 	
 		if(returnValue != -1) 
 			callback(null, returnValue)
@@ -646,14 +502,108 @@ HomeSeerAccessory.prototype = {
 			callback(error, -1);
 		}	
     },
+	*/
 
+
+
+/*
+// getBatteryValue added to support reading of the Battery Level for locks using the batteryRef reference.
+    getBatteryValue: function (callback) {
+			callback(null, getHSValue(this.config.batteryRef));
+	 },
+	
+
+    getCurrentDoorState: function (callback) {
+        var ref = this.config.stateRef;
+        var url = this.access_url + "request=getstatus&ref=" + ref;
+
+        httpRequest(url, 'GET', function (error, response, body) {
+            if (error) {
+                this.log(this.name + ': getCurrentDoorState function failed: %s', error.message);
+                callback(error, 0);
+            }
+            else {
+                var status = JSON.parse(body);
+                var value = status.Devices[0].value;
+
+                this.log(this.name + ': getCurrentDoorState function succeeded: value=' + value);
+                if (this.config.stateOpenValues.indexOf(value) != -1)
+                    callback(null, Characteristic.CurrentDoorState.OPEN);
+                else if (this.config.stateClosedValues.indexOf(value) != -1)
+                    callback(null, Characteristic.CurrentDoorState.CLOSED);
+                else if (this.config.stateOpeningValues && this.config.stateOpeningValues.indexOf(value) != -1)
+                    callback(null, 2);
+                else if (this.config.stateClosingValues && this.config.stateClosingValues.indexOf(value) != -1)
+                    callback(null, 3);
+                else if (this.config.stateStoppedValues && this.config.stateStoppedValues.indexOf(value) != -1)
+                    callback(null, 4);
+                else {
+                    this.log(this.name + ': Error: value for current door state not in stateO0penValues, stateClosedValues, stateOpeningValues, stateClosingValues, stateStoppedValues');
+                    callback(null, 0);
+                }
+            }
+        }.bind(this));
+    },
+
+
+    getLockCurrentState: function (callback) {
+        var ref = this.config.lockRef;
+        var url = this.access_url + "request=getstatus&ref=" + ref;
+
+        httpRequest(url, 'GET', function (error, response, body) {
+            if (error) {
+                this.log(this.name + ': getLockCurrentState function failed: %s', error.message);
+                callback(error, 3);
+            }
+            else {
+                var status = JSON.parse(body);
+                var value = status.Devices[0].value;
+
+                this.log(this.name + ': getLockCurrentState function succeeded: value=' + value);
+                if (this.config.lockUnsecuredValues && this.config.lockUnsecuredValues.indexOf(value) != -1)
+                    callback(null, 0);
+                else if (this.config.lockSecuredValues && this.config.lockSecuredValues.indexOf(value) != -1)
+                    callback(null, 1);
+                else if (this.config.lockJammedValues && this.config.lockJammedValues.indexOf(value) != -1)
+                    callback(null, 2);
+                else {
+                    callback(null, 3);
+                }
+            }
+        }.bind(this));
+    },
+
+    setLockTargetState: function (state, callback) {
+        this.log(this.name + ': Setting target lock state to %s', state);
+
+        var ref = this.config.lockRef;
+        var value = 0;
+        if (state == 0 && this.config.unlockValue)
+            value = this.config.unlockValue;
+        else if (state == 1 && this.config.lockValue)
+            value = this.config.lockValue;
+
+        var url = this.access_url + "request=controldevicebyvalue&ref=" + ref + "&value=" + value;
+        httpRequest(url, 'GET', function (error, response, body) {
+            if (error) {
+                this.log(this.name + ': setLockTargetState function failed: %s', error.message);
+                callback(error);
+            }
+            else {
+                this.log(this.name + ': setLockTargetState function succeeded!');
+                callback();
+            }
+        }.bind(this));
+
+    },
+
+*/
 
     getServices: function () {
 		this.log("---------------getServices function called --------- Debug ----------------------------");
         var services = []
 
         switch (this.config.type) {
-
 			/*
 			
             case "Switch": {
@@ -842,9 +792,7 @@ HomeSeerAccessory.prototype = {
 			
 			*/
 			
-		
-		
-			
+
             case "Lock": {
                 this.config.lockRef = this.ref;
                 var lockService = new Service.LockMechanism();
@@ -889,7 +837,35 @@ HomeSeerAccessory.prototype = {
                 break;
             }
 			
-	
+			
+			/*
+            case "SecuritySystem": {
+
+                //Better default
+                if (this.config.statusUpdateCount == null)
+                    this.config.statusUpdateCount = 75;
+
+                var securitySystemService = new Service.SecuritySystem();
+				securitySystemService.isPrimaryService = true;
+				
+                securitySystemService
+                    .getCharacteristic(Characteristic.SecuritySystemCurrentState)
+                    .on('get', this.getSecuritySystemCurrentState.bind(this));
+                securitySystemService
+                    .getCharacteristic(Characteristic.SecuritySystemTargetState)
+                    .on('get', this.getSecuritySystemCurrentState.bind(this));
+                securitySystemService
+                    .getCharacteristic(Characteristic.SecuritySystemTargetState)
+                    .on('set', this.setSecuritySystemTargetState.bind(this));
+                services.push(securitySystemService);
+
+                this.statusCharacteristic = securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState);
+
+                break;
+            }
+			*/
+			
+			
             case "Lightbulb": 
 			default: {
 
@@ -1182,7 +1158,6 @@ function updateAccssoryFromHSData(accessory)
 		} // end for sIndex
 }
 
-
 function updateAllFromHSData()
 {
 
@@ -1219,7 +1194,6 @@ function updateCharacteristic(characteristicObject)
 				}
 			);
 }
-
-					
+				
 
 module.exports.platform = HomeSeerPlatform;
