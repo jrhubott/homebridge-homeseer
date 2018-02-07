@@ -308,15 +308,13 @@ HomeSeerAccessory.prototype = {
 	// setHSValue function expects to be bound by .bind() to a HomeKit Service Object Characteristic!
 	setHSValue: function (level, callback) {
 		var url;
-
+		var callbackValue = 1;
+		var transmitValue = level;
 
 		
 		// For Debugging
 		console.log ("** Debug ** - Called setHSValue with level %s for UUID %s", level, this.UUID);
 		// console.log ("** Debug ** access_url is %s", _accessURL);
-		
-		var transmitValue = level;
-
 		
 		if (!this.UUID) {
 			var error = "*** PROGRAMMING ERROR **** - setHSValue called by something without a UUID";
@@ -441,8 +439,8 @@ HomeSeerAccessory.prototype = {
 					{
 						switch(level)
 						{
-							case 0: transmitValue = (this.HSunlockValue) ? this.transmitValue : 0;
-							case 1: transmitValue = (this.HSlockValue)   ? this.HSlockValue   : 255;
+							case 0: {transmitValue =  0; break;}
+							case 1: {transmitValue =  255; break; }
 						}
 						console.log("Set TransmitValue for lock charactristic %s to %s ", this.displayName, transmitValue);
 						break;
@@ -472,7 +470,9 @@ HomeSeerAccessory.prototype = {
 						
 						
 						if (level == false) 
-							{transmitValue = 0 ; 
+							{
+								transmitValue = 0 ; 
+								callbackValue = 0;
 							setHSValue(this.HSRef, 0); // assume success and set to 0 to avoid jumping of any associated dimmer / range slider.
 						}
 						else
@@ -482,6 +482,7 @@ HomeSeerAccessory.prototype = {
 								// if it is off, turn on to full level.
 								transmitValue = 99;
 								setHSValue(this.HSRef, 99);
+								callbackValue = 1;
 							}
 							else
 							{
@@ -490,6 +491,7 @@ HomeSeerAccessory.prototype = {
 								// and use of set-last-value (255)  will cause jumping of the HomeKit Dimmer slider interface
 								// if a poll occurs during ramping.
 								transmitValue = getHSValue(this.HSRef);
+								callbackValue = 1;
 							}
 						}
 						
@@ -597,7 +599,7 @@ HomeSeerAccessory.prototype = {
             }
             else {
                 console.log(this.name + ': HomeSeer setHSValue function succeeded!');
-                callback();
+                callback(null, callbackValue);
             }
         }.bind(this));
 		
@@ -1648,9 +1650,17 @@ HomeSeerAccessory.prototype = {
 				lockService.isPrimaryService = true;
 				lockService.displayName = "Service.LockMechanism";
 				
-                lockService
+				lockService
                     .getCharacteristic(Characteristic.LockCurrentState)
-                    .on('get', this.getLockCurrentState.bind(this));
+					.HSRef = this.config.ref;
+					
+                // Now handled by polling
+				/* lockService
+                    .getCharacteristic(Characteristic.LockCurrentState)
+                    .on('get', this.getHSValue.bind(this));
+				*/
+				
+				
                 lockService
                     .getCharacteristic(Characteristic.LockTargetState)
                     .on('get', this.getLockCurrentState.bind(this));
@@ -1878,6 +1888,15 @@ function updateCharacteristicFromHSData(characteristicObject)
 				characteristicObject.updateValue(lowBatteryStatus);
 				break;
 			}
+			case(characteristicObject.UUID == Characteristic.LockCurrentState.UUID):
+			{
+				// Set to 0 = UnSecured, 1 - Secured, 2 = Jammed.
+				var lockState = (newValue == 0) ? 0 : (newValue == 255 ? 1 : 2);
+									
+				characteristicObject.updateValue(lockState);
+				break;
+			}
+			// case(characteristicObject.UUID == Characteristic.LockTargetState.UUID):
 			case(characteristicObject.UUID == Characteristic.On.UUID):
 			{
 				characteristicObject.updateValue( ((newValue) ? true: false) );
@@ -1914,7 +1933,7 @@ function updateCharacteristicFromHSData(characteristicObject)
 				}
 				default:
 				{
-					console.log("** WARNING ** -- Possible Incorrect Value Assignment for characteristic %s", characteristicObject.displayName);
+					console.log("** WARNING ** -- Possible Incorrect Value Assignment for characteristic %s set to value %s", characteristicObject.displayName, newValue);
 					characteristicObject.updateValue( newValue);
 				}
 			}; //end switch
