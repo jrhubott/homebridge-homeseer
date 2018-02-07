@@ -1656,14 +1656,14 @@ HomeSeerAccessory.prototype = {
                     .on('get', getHSValue.bind(lockService.getCharacteristic(Characteristic.LockCurrentState)));
 				
 
-                lockService
+               /*  lockService
                     .getCharacteristic(Characteristic.LockTargetState)
                     .on('get', getHSValue.bind(lockService.getCharacteristic(Characteristic.LockCurrentState)));
-				
+		*/
 				// Target needs to be updated to match current state after a HomeSeer change.
-				lockService
+				/* lockService
                     .getCharacteristic(Characteristic.LockTargetState)
-					.HSRef = this.config.ref;
+					.HSRef = this.config.ref; */
 					
                 lockService
                     .getCharacteristic(Characteristic.LockTargetState)
@@ -1680,7 +1680,7 @@ HomeSeerAccessory.prototype = {
 				services.push(lockService);
 				
 		    	_statusObjects.push(lockService.getCharacteristic(Characteristic.LockCurrentState));
-				_statusObjects.push(lockService.getCharacteristic(Characteristic.LockTargetState));
+			//  _statusObjects.push(lockService.getCharacteristic(Characteristic.LockTargetState));
 								
                 break;
             }
