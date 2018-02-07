@@ -1,48 +1,5 @@
 'use strict';
 
-//
-// HomeSeer Platform Shim for HomeBridge by Jean-Michel Joudrier - (stipus at stipus dot com)
-// V0.1 - 2015/10/07
-// - Initial version
-// V0.2 - 2015/10/10
-// - Occupancy sensor fix
-// V0.3 - 2015/10/11
-// - Added TemperatureUnit=F|C option to temperature sensors
-// - Added negative temperature support to temperature sensors
-// V0.4 - 2015/10/12
-// - Added thermostat support
-// V0.5 - 2015/10/12
-// - Added Humidity sensor support
-// V0.6 - 2015/10/12
-// - Added Battery support
-// - Added low battery support for all sensors
-// - Added HomeSeer event support (using HomeKit switches...)
-// V0.7 - 2015/10/13
-// - You can add multiple HomeKit devices for the same HomeSeer device reference
-// - Added CarbonMonoxide sensor
-// - Added CarbonDioxide sensor
-// - Added onValues option to all binary sensors
-// V0.8 - 2015/10/14
-// - Added uuid_base parameter to all accessories
-// V0.9 - 2015/10/16
-// - Smoke sensor battery fix
-// - Added offEventGroup && offEventName to events (turn <event> on launches one HS event. turn <event> off can launch another HS event)
-// - Added GarageDoorOpener support
-// - Added Lock support
-// V0.10 - 2015/10/29
-// - Added Security System support
-// - Added Window support
-// - Added Window Covering support
-// - Added obstruction support to doors, windows, and windowCoverings
-// V0.11 - 2018/01/13
-// - Added battery support to Lock devices and added added battery services to other devices.
-// V0.12 - New Pollinng
-//
-// Remember to add platform to config.json. 
-//
-// You can get HomeSeer Device References by clicking a HomeSeer device name, then 
-// choosing the Advanced Tab.
-//
 // The uuid_base parameter is valid for all events and accessories. 
 // If you set this parameter to some unique identifier, the HomeKit accessory ID will be based on uuid_base instead of the accessory name.
 // It is then easier to change the accessory name without messing the HomeKit database.
