@@ -1654,6 +1654,11 @@ HomeSeerAccessory.prototype = {
                 lockService
                     .getCharacteristic(Characteristic.LockTargetState)
                     .on('get', this.getLockCurrentState.bind(this));
+					
+				lockService
+                    .getCharacteristic(Characteristic.LockTargetState)
+					.HSRef = this.config.ref;
+					
                 lockService
                     .getCharacteristic(Characteristic.LockTargetState)
 					.on('set', this.setHSValue.bind(lockService.getCharacteristic(Characteristic.LockTargetState)));
@@ -1909,7 +1914,7 @@ function updateCharacteristicFromHSData(characteristicObject)
 				}
 				default:
 				{
-					that.log("** WARNING ** -- Possible Incorrect Value Assignment for service %s, with characteristic %s", service.displayName, characteristicObject.displayName);
+					console.log("** WARNING ** -- Possible Incorrect Value Assignment for characteristic %s", characteristicObject.displayName);
 					characteristicObject.updateValue( newValue);
 				}
 			}; //end switch
@@ -1952,7 +1957,7 @@ function updateCharacteristic(characteristicObject)
 {
 	if (characteristicObject.HSRef == null) 
 	{
-		console.log("** Programming Error ** - updateCharacteristic passed characteristic object without a HomeSeer reference HSREf " + characteristic);
+		console.log("** Programming Error ** - updateCharacteristic passed characteristic object %s with displayName %s but without a HomeSeer reference HSREf ", characteristicObject.UUID, characteristicObject.displayName);
 	}
 	
 	var url = _accessURL +  "request=getstatus&ref=" + characteristicObject.HSRef;
