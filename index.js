@@ -14,7 +14,7 @@ var promiseHTTP = require("request-promise-native");
 
 // var isValidUUID = require("./lib/UUIDcheck");
 
-var http = require('http');
+// var http = require('http');
 var Accessory, Service, Characteristic, UUIDGen;
 
 var pollingOffsetCounter=0;
@@ -79,8 +79,8 @@ function HomeSeerPlatform(log, config, api) {
     if(config)
 		if (this.config["poll"]==null)
 		{
-        this.config["poll"] = 60;
-		this.config["platformPoll"] = 60;
+        this.config["poll"] = 15;
+		this.config["platformPoll"] = 15;
 		}
 		else
 		{
@@ -98,16 +98,17 @@ HomeSeerPlatform.prototype = {
 				
 			var that = this;
 
-        if (this.config.events) {
-            this.log("Creating HomeSeer events.");
-            for (var i = 0; i < this.config.events.length; i++) {
-                var event = new HomeSeerEvent(that.log, that.config, that.config.events[i]);
-                foundAccessories.push(event);
-            }
-        }
+			if (this.config.events) {
+				this.log("Creating HomeSeer events.");
+				for (var i = 0; i < this.config.events.length; i++) {
+					var event = new HomeSeerEvent(that.log, that.config, that.config.events[i]);
+					foundAccessories.push(event);
+				}
+			} // endif
 
         this.log("Fetching HomeSeer devices.");
         var refList = "";
+		
         for (var i = 0; i < this.config.accessories.length; i++) {
             refList = refList + this.config.accessories[i].ref;
 			
@@ -126,6 +127,8 @@ HomeSeerPlatform.prototype = {
 		this.log("Global Status URL is " + _allStatusUrl);
 		
         var url = this.config["host"] + "/JSON?request=getstatus&ref=" + refList;
+		
+
         httpRequest(url, "GET", function (error, response, body) {
             if (error) {
                 this.log('HomeSeer status function failed: %s', error.message);
@@ -145,54 +148,49 @@ HomeSeerPlatform.prototype = {
                         } //endfor
                     }
                 } //end else.
-		    
-// This is the new Polling Mechanism to poll all at once.		
+			callback(foundAccessories);
+            }
+        }.bind(this));
+		
+    
+	
+// This is the new Polling Mechanism to poll all at once.	
+
 			updateEmitter = pollingtoevent(
 				function (done) {
 					that.log ("************************");
 					// Now do the poll
-							httpRequest(_allStatusUrl, 'GET', function (error, response, body) {
-							if (error) {
-								this.log("** Warning ** - Polling HomeSeer Failed");
-								// callback(error, 0);
-							}
-							else {
+						promiseHTTP(_allStatusUrl)
+							.then( function(htmlString) {
+									_currentHSDeviceStatus = JSON.parse(htmlString).Devices;
+									console.log("Polled HomeSeer, Retrieved %s values",  _currentHSDeviceStatus.length);
+							}).catch(function(err)
+								{
+									console.log("HomeSeer poll attempt failed with error %s", err);
+								}
+							);
 
-								_currentHSDeviceStatus = JSON.parse(body).Devices;
-								this.log("Device Data for %s HomeSeer devices retrieved from HomeSeer ",  _currentHSDeviceStatus.length);
-							}
-							}.bind(this)); // end of the HTTP Request
 					done(null, null);
 					}.bind(this), {interval: this.config.platformPoll * 1000 }
 					);	//end polling-to-event function
-			
+
 
 			updateEmitter.on("poll",
 				function() { 
-				//	that.log("----------- Debug: Entered function accessoriesUpdate.on -----------");
 				// Now Create an array where the HomeSeer Value is tied to the array index location. e.g., ref 101's value is at location 101.
 					for (var index in _currentHSDeviceStatus)
 					{
-					// Update List of all HS Values
 						_HSValues[_currentHSDeviceStatus[index].ref] = _currentHSDeviceStatus[index].value;
 					} //endfor
-				
-					// Then scan each device characteristic and update it.
-					// that.log("calling updateCharacteristicsFromHSData");
-					// that.log("that.foundAccessories is defined? " + that.foundAccessories);
-					updateAllFromHSData();
-				} // end function HSDevices
-			);
-			// this.log("------------------ Debug ------------------");
-			// this.log(foundAccessories);
-			// this.log ("----------------------");
-			
-			callback(foundAccessories);
-            }
-        }.bind(this));
 
-    }
-}
+					updateAllFromHSData();
+				} 
+			); // end updateEmitter.on	
+			
+			// ============================
+	
+	} // end the accessories function
+} // ends the function prototype
 
 function HomeSeerAccessory(log, platformConfig, accessoryConfig, status) {
     this.log = log;
