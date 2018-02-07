@@ -444,7 +444,7 @@ HomeSeerAccessory.prototype = {
 							case 0: {transmitValue =  0; break;}
 							case 1: {transmitValue =  255; break; }
 						}
-						console.log("Set TransmitValue for lock charactristic %s to %s ", this.displayName, transmitValue);
+						console.log("Set TransmitValue for lock characteristic %s to %s ", this.displayName, transmitValue);
 						break;
 					}
 					//  case(Characteristic.Logs.UUID ):  
@@ -1080,18 +1080,6 @@ HomeSeerAccessory.prototype = {
 	 },
 	
 
-    getLowBatteryStatus: function (callback) {
-		var minValue = 20;
-		
-        if (this.config.batteryThreshold) minValue = this.config.batteryThreshold;
-
-        if (getHSValue(this.config.batteryRef)  > minValue)
-				{ callback(null, 0); }
-            else
-				{ callback(null, 1); }
-			
-    }, // end function
-
     getCurrentDoorState: function (callback) {
         var ref = this.config.stateRef;
         var url = this.access_url + "request=getstatus&ref=" + ref;
@@ -1656,16 +1644,14 @@ HomeSeerAccessory.prototype = {
                     .getCharacteristic(Characteristic.LockCurrentState)
 					.HSRef = this.config.ref;
 					
-                // Now handled by polling
-				/* lockService
-                    .getCharacteristic(Characteristic.LockCurrentState)
-                    .on('get', this.getHSValue.bind(this));
-				*/
+                lockService
+                    .getCharacteristic(Characteristic.LockCurrentState)					
+                    .on('get', getHSValue.bind(lockService.getCharacteristic(Characteristic.LockCurrentState)));
 				
-				
+
                 lockService
                     .getCharacteristic(Characteristic.LockTargetState)
-                    .on('get', this.getLockCurrentState.bind(this));
+                    .on('get', getHSValue.bind(lockService.getCharacteristic(Characteristic.LockCurrentState)));
 				
 				// Target needs to be updated to match current state after a HomeSeer change.
 				lockService
@@ -1786,7 +1772,7 @@ HomeSeerAccessory.prototype = {
                     services.push(batteryService);
 					
 					_statusObjects.push(batteryService.getCharacteristic(Characteristic.BatteryLevel));
-					_statusObjects.push(batteryService.getCharacteristic(Characteristic.batteryThreshold));					
+					_statusObjects.push(batteryService.getCharacteristic(Characteristic.StatusLowBattery));					
                 }
 				
 		// And add a basic Accessory Information service		
@@ -1889,6 +1875,8 @@ function pollForUpdate(characteristic)
 
 function updateCharacteristicFromHSData(characteristicObject)
 {
+	//Debug
+	console.log("** Debug ** - Updating Characteristic %s with name %s", characteristicObject.UUID, characteristicObject.displayName)
 		// character stores a 
 	if (characteristicObject.HSRef)
 	{
@@ -1909,6 +1897,13 @@ function updateCharacteristicFromHSData(characteristicObject)
 				characteristicObject.updateValue(lockState);
 				break;
 			}
+			case(characteristicObject.UUID == Characteristic.LockTargetState.UUID):
+			{
+				// Set to 0 = UnSecured, 1 - Secured, 2 = Jammed.
+				var lockState = (newValue == 0) ? 0 : 255;
+				characteristicObject.updateValue(lockState);
+				break;
+			}
 			// case(characteristicObject.UUID == Characteristic.LockTargetState.UUID):
 			case(characteristicObject.UUID == Characteristic.On.UUID):
 			{
@@ -1920,78 +1915,56 @@ function updateCharacteristicFromHSData(characteristicObject)
 				characteristicObject.updateValue(newValue);
 				break;
 			}
-			case(characteristicObject.props.format == "bool"):
+			case (characteristicObject.UUID == Characteristic.Brightness.UUID):
 			{
-				characteristicObject.updateValue( newValue ? true : false);
-				break;
-			}
-					
-			case(characteristicObject.props.format == "int"):
-			{
-				if ((characteristicObject.props.unit == "percentage") && ( newValue == 99) ) newValue=100;
-				characteristicObject.updateValue(newValue);
-				break;
-			}
-			case(characteristicObject.props.format == "float"):
-			{
-				// Double-Check on this to make sure that HomeSeer always reports in celsius!
-				if ((characteristicObject.props.unit == "celsius") ) newValue = ((newValue -32) * (5 / 9));
-					characteristicObject.updateValue( newValue);
+					// Zwave uses 99 as its maximum. Make it appear as 100% in Homekit
+				characteristicObject.updateValue( (newValue == 99) ? 100 : newValue);
 				break;
 			}
 
-				case(characteristicObject.props.format == "uint8"):
-				{
-					
-				}
-				default:
-				{
+			default:
+			{
 					console.log("** WARNING ** -- Possible Incorrect Value Assignment for characteristic %s set to value %s", characteristicObject.displayName, newValue);
 					characteristicObject.updateValue( newValue);
-				}
-			}; //end switch
+			}
+		}; //end switch
 				
-			// that.log("   %s value after update is: %s", characteristicObject.displayName, characteristicObject.value);
-			} // end if
+		// that.log("   %s value after update is: %s", characteristicObject.displayName, characteristicObject.value);
+	} // end if
 }
 
 
 function updateServicesFromHSData(service)
 {
-	 // Received an array of service objects and then Loop over each characteristic object in a service object and then send the characteristic object for updating
+	 // Received an array of service objects and then Loop over each characteristic object in a service object 
+	 // and then send the characteristic object for updating
 		for(var cIndex = 0; cIndex < service.characteristics.length; cIndex++)
 		{
 			updateCharacteristicFromHSData(service.characteristics[cIndex]);
-		} // end for cIndex
-			
+		}		
 }
 
 function updateAccssoryFromHSData(accessory)
 {
 		for(var sIndex = 0; sIndex < accessory.length; sIndex++)
 		{
+			// console.log ("Debug #%s", sIndex);
 		updateServicesFromHSData( accessory[sIndex] );
 		} // end for sIndex
 }
 
 
-// Loop over all Accessories on the Bridge then update each accessory.
 function updateAllFromHSData()
 {
-	// For Debugging
-	console.log("Total Pushed Characteristic Objects are %s", _statusObjects.length);
-	// Loop over each Accessory in the array of Accessories and send the group of service objects to be updated.
-	for (var aIndex = 0; aIndex < _allAccessories.length; aIndex++)
+
+	for (var aIndex in _statusObjects)
 	{
-		updateAccssoryFromHSData(_allAccessories[aIndex]);
+		updateCharacteristicFromHSData(_statusObjects[aIndex]);
 	} // end for aindex
 } // end function
 
 function updateCharacteristic(characteristicObject)
 {
-	
-
-	
 	if (characteristicObject.HSRef == null) 
 	{
 		console.log("** Programming Error ** - updateCharacteristic passed characteristic object %s with displayName %s but without a HomeSeer reference HSREf ", characteristicObject.UUID, characteristicObject.displayName);
