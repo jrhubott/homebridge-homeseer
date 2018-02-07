@@ -312,6 +312,7 @@ HomeSeerAccessory.prototype = {
 		var url;
 		var callbackValue = 1;
 		var transmitValue = level;
+		var noUpdate = false; // set to true if something determines that there should be no HomeSeer update.
 
 		
 		// For Debugging
@@ -441,8 +442,8 @@ HomeSeerAccessory.prototype = {
 					{
 						switch(level)
 						{
-							case 0: {transmitValue =  0; break;}
-							case 1: {transmitValue =  255; break; }
+							case 0: {transmitValue =  0;   callbackValue = 0;  break;}
+							case 1: {transmitValue =  255; callbackValue = 1;  break; }
 						}
 						console.log("Set TransmitValue for lock characteristic %s to %s ", this.displayName, transmitValue);
 						break;
@@ -475,7 +476,7 @@ HomeSeerAccessory.prototype = {
 							{
 								transmitValue = 0 ; 
 								callbackValue = 0;
-							setHSValue(this.HSRef, 0); // assume success and set to 0 to avoid jumping of any associated dimmer / range slider.
+								setHSValue(this.HSRef, 0); // assume success and set to 0 to avoid jumping of any associated dimmer / range slider.
 						}
 						else
 						{
@@ -521,10 +522,7 @@ HomeSeerAccessory.prototype = {
 					//  case(Characteristic.Saturation.UUID ):  
 					//  case(Characteristic.SecuritySystemAlarmType.UUID ):  
 					//  case(Characteristic.SecuritySystemCurrentState.UUID ):  
-					case(Characteristic.SecuritySystemTargetState.UUID ):  
-					{
-						break;
-					}
+					//case(Characteristic.SecuritySystemTargetState.UUID ):  
 					//  case(Characteristic.SelectedRTPStreamConfiguration.UUID ):  
 					//  case(Characteristic.SerialNumber.UUID ):  
 					//  case(Characteristic.ServiceLabelIndex.UUID ):  
@@ -546,28 +544,28 @@ HomeSeerAccessory.prototype = {
 					//  case(Characteristic.SwingMode.UUID ):  
 					//  case(Characteristic.TargetAirPurifierState.UUID ):  
 					//  case(Characteristic.TargetAirQuality.UUID ):  
-					case(Characteristic.TargetDoorState.UUID ):  
+					/* case(Characteristic.TargetDoorState.UUID ):  
 					{
 						break;
-					}
+					} */
 					//  case(Characteristic.TargetFanState.UUID ):  
 					//  case(Characteristic.TargetHeaterCoolerState.UUID ):  
-					case(Characteristic.TargetHeatingCoolingState.UUID ):  
+					/* case(Characteristic.TargetHeatingCoolingState.UUID ):  
 					{
 						break;
-					}
+					} */
 					//  case(Characteristic.TargetHorizontalTiltAngle.UUID ):  
 					//  case(Characteristic.TargetHumidifierDehumidifierState.UUID ):  
-					case(Characteristic.TargetPosition.UUID ):  
+					/* case(Characteristic.TargetPosition.UUID ):  
 					{
 						break;
-					}
+					} */
 					//  case(Characteristic.TargetRelativeHumidity.UUID ):  
 					//  case(Characteristic.TargetSlatState.UUID ):  
-					case(Characteristic.TargetTemperature.UUID ): 
+					/* case(Characteristic.TargetTemperature.UUID ): 
 					{
 						break;
-					}
+					}*/
 					//  case(Characteristic.TargetTiltAngle.UUID ):  
 					//  case(Characteristic.TargetVerticalTiltAngle.UUID ):  
 					//  case(Characteristic.TemperatureDisplayUnits.UUID ):  
@@ -579,6 +577,12 @@ HomeSeerAccessory.prototype = {
 					default:
 					{
 						console.log ("*** PROGRAMMING ERROR **** - Service or Characteristic UUID not handled by setHSValue routine");
+						
+						var err = "*** PROGRAMMING ERROR **** - Service or Characteristic UUID not handled by setHSValue routine" 
+										+ characteristicObject.UUID + "  named  " + characteristicObject.displayName;
+						callback(err, 0);
+						return;
+						break;
 					}
 
 				}
@@ -609,47 +613,6 @@ HomeSeerAccessory.prototype = {
 		updateCharacteristic(this);
 		
 // 		updateEmitter.emit("poll");
-    },
-
-    getPowerState: function (callback) {
-            if (!this.ref) {
-                this.log(this.name + ': getPowerState function failed: undefined HS Reference');
-                callback(error, 0);
-            }
-            else {
-				var value = getHSValue(this.ref);
-                this.log(this.name + ': getPowerState function succeeded: value=' + value );
-                if (value == 0)
-                    callback(null, 0);
-                else
-                    callback(null, 1);
-            }
-    },
-
-    getBinarySensorState: function (callback) {
-		
-			if (!this.ref) {
-                this.log(this.name + ': getPowerState function failed: undefined HS Reference');
-                callback(error, 0);
-            } // end if
-            else {
-				var value = getHSValue(this.ref);
-                this.log(this.name + ': getBinarySensorState function succeeded: value=' + value);
-				
-                if (this.config.onValues) {
-                    if (this.config.onValues.indexOf(value) != -1)
-                        callback(null, 1);
-                    else
-                        callback(null, 0);
-                } //end inner if
-                else {
-                    if (value != 0)
-                        callback(null, 1);
-                    else
-                        callback(null, 0);
-                } //end inner else
-					
-            } // end else
     },
 
     setBrightness: function (level, callback) {
@@ -1279,12 +1242,10 @@ HomeSeerAccessory.prototype = {
 		this.log("---------------getServices function called --------- Debug ----------------------------");
         var services = []
 
-
-
-
         switch (this.config.type) {
 
-            case "Fan": {
+            /*
+			case "Fan": {
                 var fanService = new Service.Fan
 				fanService.isPrimaryService = true;
 				
@@ -1311,6 +1272,9 @@ HomeSeerAccessory.prototype = {
                 services.push(fanService);
                 break;
             }
+			*/
+			/*
+			
             case "Switch": {
                 var switchService = new Service.Switch();
 				switchService.isPrimaryService = true;
@@ -1321,13 +1285,16 @@ HomeSeerAccessory.prototype = {
 					
                 switchService
                     .getCharacteristic(Characteristic.On)
-                    .on('set', this.setPowerState.bind(this))
-                    .on('get', this.getPowerState.bind(this));
+                    .on('set', this.setPowerState.bind(this));
 
                 this.statusCharacteristic = switchService.getCharacteristic(Characteristic.On);
                 services.push(switchService);
                 break;
             }
+			*/
+			
+			
+			/*
             case "Outlet": {
                 var outletService = new Service.Outlet();
 				outletService.isPrimaryService = true;
@@ -1344,7 +1311,10 @@ HomeSeerAccessory.prototype = {
                 this.statusCharacteristic = outletService.getCharacteristic(Characteristic.On);
                 services.push(outletService);
                 break;
-            }
+            } */
+			
+			
+			
             case "TemperatureSensor": {
                 var temperatureSensorService = new Service.TemperatureSensor();
 				temperatureSensorService.isPrimaryService = true;
@@ -1359,27 +1329,27 @@ HomeSeerAccessory.prototype = {
 					.HStemperatureUnit = ((this.config.temperatureUnit) ? this.config.temperatureUnit : "F" );
 				
                 temperatureSensorService
-                    .getCharacteristic(Characteristic.CurrentTemperature)
-                    .on('get', this.getTemperature.bind(this));
-				
-                temperatureSensorService
                     .getCharacteristic(Characteristic.CurrentTemperature).setProps({ minValue: -100 });
 
                 services.push(temperatureSensorService);
+				
+				_statusObjects.push(temperatureSensorService.getCharacteristic(Characteristic.CurrentTemperature));	
 
                 break;
             }
+			
             case "CarbonMonoxideSensor": {
                 var carbonMonoxideSensorService = new Service.CarbonMonoxideSensor();
                 carbonMonoxideSensorService.isPrimaryService = true;
 				
                 carbonMonoxideSensorService
                     .getCharacteristic(Characteristic.CarbonMonoxideDetected)
-                    .on('get', this.getBinarySensorState.bind(this))
 					.HSRef = this.config.ref;
 
                 services.push(carbonMonoxideSensorService);
-
+				
+				_statusObjects.push(carbonMonoxideSensorService.getCharacteristic(Characteristic.CarbonMonoxideDetected));	
+				
                 break;
             }
             case "CarbonDioxideSensor": {
@@ -1388,11 +1358,11 @@ HomeSeerAccessory.prototype = {
 				
                 carbonDioxideSensorService
                     .getCharacteristic(Characteristic.CarbonDioxideDetected)
-                    .on('get', this.getBinarySensorState.bind(this))
                     .HSRef = this.config.ref;
 
                 services.push(carbonDioxideSensorService);
-
+				
+				_statusObjects.push(carbonDioxideSensorService.getCharacteristic(Characteristic.CarbonDioxideDetected));	
 
                 break;
             }
@@ -1402,10 +1372,11 @@ HomeSeerAccessory.prototype = {
 				
 				contactSensorService
                     .getCharacteristic(Characteristic.ContactSensorState)
-                    .on('get', this.getBinarySensorState.bind(this))
                     .HSRef = this.config.ref;
 
                 services.push(contactSensorService);
+
+				_statusObjects.push(contactSensorService.getCharacteristic(Characteristic.ContactSensorState));	
 
                 break;
             }
@@ -1416,45 +1387,52 @@ HomeSeerAccessory.prototype = {
 				
                 motionSensorService
                     .getCharacteristic(Characteristic.MotionDetected)
-                    .on('get', this.getBinarySensorState.bind(this));
+                   .HSRef = this.config.ref;
 
                 services.push(motionSensorService);
-
+				
+				_statusObjects.push(motionSensorService.getCharacteristic(Characteristic.MotionDetected));	
+				
                 break;
             }
             case "LeakSensor": {
                 var leakSensorService = new Service.LeakSensor();
                 leakSensorService
                     .getCharacteristic(Characteristic.LeakDetected)
-                    .on('get', this.getBinarySensorState.bind(this))
-                    .isPrimaryService = true;
+                    .HSRef = this.config.ref;
 
                 services.push(leakSensorService);
 
+				_statusObjects.push(leakSensorService.getCharacteristic(Characteristic.LeakDetected));	
+				
                 break;
             }
             case "OccupancySensor": {
                 var occupancySensorService = new Service.OccupancySensor();
                 occupancySensorService
                     .getCharacteristic(Characteristic.OccupancyDetected)
-                    .on('get', this.getBinarySensorState.bind(this))
-                    .isPrimaryService = true;
+                    .HSRef = this.config.ref;
 
                 services.push(occupancySensorService);
-
+				
+				_statusObjects.push(occupancySensorService.getCharacteristic(Characteristic.OccupancyDetected));	
+				
                 break;
             }
             case "SmokeSensor": {
                 var smokeSensorService = new Service.SmokeSensor();
                 smokeSensorService
                     .getCharacteristic(Characteristic.SmokeDetected)
-                    .on('get', this.getBinarySensorState.bind(this))
-                    .isPrimaryService = true;
+					.HSRef = this.config.ref;
 
                 services.push(smokeSensorService);
+				
+				_statusObjects.push(smokeSensorService.getCharacteristic(Characteristic.SmokeDetected));	
 
                 break;
             }
+			
+			/*
             case "LightSensor": {
                 var lightSensorService = new Service.LightSensor();
                 lightSensorService
@@ -1466,6 +1444,9 @@ HomeSeerAccessory.prototype = {
 
                 break;
             }
+			*/
+			
+			/*
             case "HumiditySensor": {
                 var humiditySensorService = new Service.HumiditySensor();
                 humiditySensorService
@@ -1477,6 +1458,10 @@ HomeSeerAccessory.prototype = {
 
                 break;
             }
+			
+			*/
+			
+			/*
             case "Door": {
                 var doorService = new Service.Door();
                 doorService
@@ -1501,6 +1486,10 @@ HomeSeerAccessory.prototype = {
                 services.push(doorService);
                 break;
             }
+			
+			*/
+			
+			/*
             case "Window": {
                 var windowService = new Service.Window();
                 windowService
@@ -1522,6 +1511,9 @@ HomeSeerAccessory.prototype = {
                 services.push(windowService);
                 break;
             }
+			/*
+			
+			/*
             case "WindowCovering": {
                 var windowCoveringService = new Service.WindowCovering();
                 windowCoveringService
@@ -1545,7 +1537,11 @@ HomeSeerAccessory.prototype = {
                 services.push(windowCoveringService);
 
                 break;
-            }
+            }			
+			*/
+			
+			
+			/*
             case "Battery": {
                 var batteryService = new Service.BatteryService();
 				batteryService.isPrimaryService = true;
@@ -1570,6 +1566,10 @@ HomeSeerAccessory.prototype = {
                 services.push(batteryService);
 		break;
             }
+			*/ 
+			
+			
+			/*
             case "Thermostat": {
                 var thermostatService = new Service.Thermostat();
 				thermostatService.isPrimaryService = true;
@@ -1600,6 +1600,10 @@ HomeSeerAccessory.prototype = {
                 services.push(thermostatService);
                 break;
             }
+			*/
+			
+			
+			/*
             case "GarageDoorOpener": {
                 //Better default
                 if (this.config.statusUpdateCount == null)
@@ -1634,6 +1638,9 @@ HomeSeerAccessory.prototype = {
 
                 break;
             }
+			*/
+			
+			
             case "Lock": {
                 this.config.lockRef = this.ref;
                 var lockService = new Service.LockMechanism();
@@ -1677,6 +1684,9 @@ HomeSeerAccessory.prototype = {
 								
                 break;
             }
+			
+			
+			/*
             case "SecuritySystem": {
 
                 //Better default
@@ -1701,6 +1711,9 @@ HomeSeerAccessory.prototype = {
 
                 break;
             }
+			*/
+			
+			
             case "Lightbulb": 
 			default: {
 
@@ -1905,7 +1918,15 @@ function updateCharacteristicFromHSData(characteristicObject)
 				break;
 			}
 			// case(characteristicObject.UUID == Characteristic.LockTargetState.UUID):
-			case(characteristicObject.UUID == Characteristic.On.UUID):
+			
+			case( characteristicObject.UUID == Characteristic.CarbonDioxideDetected.UUID ):
+			case( characteristicObject.UUID == Characteristic.CarbonMonoxideDetected.UUID):
+			case( characteristicObject.UUID == Characteristic.ContactSensorState.UUID 	):
+			case( characteristicObject.UUID == Characteristic.MotionDetected.UUID 	):
+			case( characteristicObject.UUID == Characteristic.LeakDetected.UUID 		):
+			case( characteristicObject.UUID == Characteristic.OccupancyDetected.UUID 	):
+			case( characteristicObject.UUID == Characteristic.SmokeDetected.UUID 	):
+			case( characteristicObject.UUID == Characteristic.On.UUID):
 			{
 				characteristicObject.updateValue( ((newValue) ? true: false) );
 				break;
@@ -1919,6 +1940,15 @@ function updateCharacteristicFromHSData(characteristicObject)
 			{
 					// Zwave uses 99 as its maximum. Make it appear as 100% in Homekit
 				characteristicObject.updateValue( (newValue == 99) ? 100 : newValue);
+				break;
+			}
+			case (characteristicObject.UUID == Characteristic.CurrentTemperature):
+			{
+				// HomeKit uses celsius, so if HS is using Fahrenheit, convert to Celsius.
+				if (characteristicObject.HStemperatureUnit && (characteristicObject.HStemperatureUnit == "F")) 
+					{ newValue = (newValue -32 )* (5/9);}
+								
+				characteristicObject.updateValue(newValue);
 				break;
 			}
 
@@ -1962,6 +1992,7 @@ function updateAllFromHSData()
 		updateCharacteristicFromHSData(_statusObjects[aIndex]);
 	} // end for aindex
 } // end function
+
 
 function updateCharacteristic(characteristicObject)
 {
