@@ -229,33 +229,6 @@ HomeSeerAccessory.prototype = {
         callback();
     },
 
-    setPowerState: function (powerOn, callback) {
-        var url;
-
-        if (powerOn) {
-            url = this.control_url + this.onValue;
-            this.log(this.name + ": Setting power state to on");
-        }
-        else {
-            url = this.control_url + this.offValue;
-            this.log(this.name + ": Setting power state to off");
-        }
-
-        httpRequest(url, 'GET', function (error, response, body) {
-            if (error) {
-                this.log(this.name + ': HomeSeer power function failed: %s', error.message);
-                callback(error);
-            }
-            else {
-                this.log(this.name + ': HomeSeer power function succeeded!');
-                callback();
-            }
-        }.bind(this));
-
-        //Poll for updated status
-        // this.pollForUpdate();
-    },
-	
 	// setHSValue function expects to be bound by .bind() to a HomeKit Service Object Characteristic!
 	setHSValue: function (level, callback) {
 		var url;
@@ -265,7 +238,7 @@ HomeSeerAccessory.prototype = {
 
 		
 		// For Debugging
-		console.log ("** Debug ** - Called setHSValue with level %s for UUID %s", level, this.UUID);
+		// console.log ("** Debug ** - Called setHSValue with level %s for UUID %s", level, this.UUID);
 		// console.log ("** Debug ** access_url is %s", _accessURL);
 		
 		if (!this.UUID) {
@@ -288,9 +261,10 @@ HomeSeerAccessory.prototype = {
 						transmitValue = (transmitValue == 100) ? 99 : level;
 						
 						setHSValue(this.HSRef, transmitValue); 
+						callbackValue = level; // but call back with the value instructed by HomeKit rather than the modified 99 sent to HomeSeer
 						
 						this.updateValue(transmitValue); // Assume success. This gets corrected on next poll if assumption is wrong.
-						console.log ("          ** Debug ** called for Brightness update with level %s then set to transmitValue %s", level, transmitValue); 
+						// console.log ("          ** Debug ** called for Brightness update with level %s then set to transmitValue %s", level, transmitValue); 
 
 						break;
 					}
@@ -303,6 +277,7 @@ HomeSeerAccessory.prototype = {
 							case 0: {transmitValue =  0;   callbackValue = 0;  break;}
 							case 1: {transmitValue =  255; callbackValue = 1;  break; }
 						}
+						setHSValue(this.HSRef, transmitValue);
 						console.log("Set TransmitValue for lock characteristic %s to %s ", this.displayName, transmitValue);
 						break;
 					}
@@ -327,12 +302,12 @@ HomeSeerAccessory.prototype = {
 						}
 						else
 						{
-							if(getHSValue(this.HSRef) == 0)	
+							if(getHSValue(this.HSRef) == 0)	// if it is already off, then turn fully on.
 							{
 								// if it is off, turn on to full level.
 								transmitValue = 99;
 								setHSValue(this.HSRef, 99);
-								callbackValue = 1;
+								callbackValue = 1; // and callback with a 1 meaning it was turned on
 							}
 							else
 							{
@@ -340,13 +315,14 @@ HomeSeerAccessory.prototype = {
 								// don't use the "255" value because Z-Wave dimmer's can be ramping up/down 
 								// and use of set-last-value (255)  will cause jumping of the HomeKit Dimmer slider interface
 								// if a poll occurs during ramping.
-								transmitValue = getHSValue(this.HSRef);
+								transmitValue = getHSValue(this.HSRef); // if it is already on, then just transmit its current value
 								callbackValue = 1;
+								noUpdate = true; // or maybe don't transmit at all (testing this feature)
 							}
 						}
 						
 						
-						break;
+						break; // 
 					}
 
 					default:
@@ -363,54 +339,32 @@ HomeSeerAccessory.prototype = {
 				}
 		
 		if (isNaN(transmitValue)) 
-			{console.log ("*** PROGRAMMING ERROR **** - Service or Characteristic UUID not handled by setHSValue routine");
+			{console.log ("*** PROGRAMMING ERROR **** - Attempting to transmit non-numeric value to HomeSeer for %s with UUID %s", this.displayName, this.UUID);
 			callback("Programming Error in function setHSValue. Attempt to send value to HomeSeer that is not a number");
 			};
 	
 		 url = _accessURL + "request=controldevicebyvalue&ref=" + this.HSRef + "&value=" + transmitValue;
  
 		 // For debugging
-		 console.log ("Debug - Called setHSValue has URL = %s", url);
+		 //console.log ("Debug - Called setHSValue has URL = %s", url);
 
-
-        httpRequest(url, 'GET', function (error, response, body) {
-            if (error) {
-                console.log(this.name + ': HomeSeer setHSValue function failed: %s', error.message);
-                callback(error);
-            }
-            else {
-                console.log(this.name + ': HomeSeer setHSValue function succeeded!');
-                callback(null, callbackValue);
-            }
-        }.bind(this));
-		
-		// Need to confirm this is a characteristic.
-		updateCharacteristic(this);
-		
-// 		updateEmitter.emit("poll");
+		 if (!noUpdate)
+		 {			 promiseHTTP(url)
+			.then( function(htmlString) {
+					console.log(this.displayName + ': HomeSeer setHSValue function succeeded!');
+					callback(null, callbackValue);
+					updateCharacteristic(this);
+			}.bind(this))
+			.catch(function(err)
+				{ 	console.log("Error attempting to update %s, with error %s", this.displayName, this.UUID, err);
+				}.bind(this)
+			);
+		 } else
+		 {
+			 callback(null, callbackValue);
+		 }
+	
     },
-
-    setBrightness: function (level, callback) {
-        
-	// Brightness value of 100 is not allowed in Z-Wave, Z-wave permits 1-99 and 255 is allowed as on-last-level
-	if (level > 99) level = 99;
-	    
-	    var url = this.control_url + level;
-
-        this.log(this.name + ": Setting value to %s", level);
-
-        httpRequest(url, 'GET', function (error, response, body) {
-            if (error) {
-                this.log(this.name + ': setBrightness function failed: %s', error.message);
-                callback(error);
-            }
-            else {
-                this.log(this.name + ': setBrightness function succeeded!');
-                callback();
-            }
-        }.bind(this));
-    },
-
 
 
     getServices: function () {
@@ -678,8 +632,7 @@ HomeSeerAccessory.prototype = {
                 break;
             }
 			*/
-			
-			
+
             case "Lightbulb": 
 			default: {
 
@@ -868,26 +821,13 @@ function updateCharacteristicFromHSData(characteristicObject)
 			case(characteristicObject.UUID == Characteristic.LockCurrentState.UUID):
 			{
 				// Set to 0 = UnSecured, 1 - Secured, 2 = Jammed.
-				
 				console.log("** Debug ** - Attempting LockCurrentState update with value %s", newValue);
 				
 				switch(newValue)
 				{
-					case(0):
-					{
-					characteristicObject.updateValue(0);
-						break;
-					}
-					case(255):
-					{
-						characteristicObject.updateValue(1);
-						break;
-					}
-					default:
-					{
-						characteristicObject.updateValue(2)
-						break;
-					}
+					case(0):	{	characteristicObject.updateValue(0);	break;	}
+					case(255):	{	characteristicObject.updateValue(1);	break;	}
+					default:	{	characteristicObject.updateValue(2);	break;	}
 				}
 				console.log("** Debug ** - Finished LockCurrentState update");
 
@@ -983,6 +923,7 @@ function updateCharacteristic(characteristicObject)
 	if (characteristicObject.HSRef == null) 
 	{
 		console.log("** Programming Error ** - updateCharacteristic passed characteristic object %s with displayName %s but without a HomeSeer reference HSREf ", characteristicObject.UUID, characteristicObject.displayName);
+		return;
 	}
 	
 	var url = _accessURL +  "request=getstatus&ref=" + characteristicObject.HSRef;
@@ -994,8 +935,7 @@ function updateCharacteristic(characteristicObject)
 				// console.log("	*** Debug *** Promise htmlString %s", htmlString);
 				
 				var thisDevice = JSON.parse(htmlString).Devices;
-				console.log("");
-				console.log("			** Debug ** - Polled for the single device " + thisDevice);
+				// console.log("			** Debug ** - Polled for the single device " + thisDevice);
 				updateCharacteristicFromHSData(characteristicObject);
 				
 			}).catch(function(err)
