@@ -1,43 +1,6 @@
 'use strict';
 
 //
-// HomeSeer Platform Shim for HomeBridge by Jean-Michel Joudrier - (stipus at stipus dot com)
-// V0.1 - 2015/10/07
-// - Initial version
-// V0.2 - 2015/10/10
-// - Occupancy sensor fix
-// V0.3 - 2015/10/11
-// - Added TemperatureUnit=F|C option to temperature sensors
-// - Added negative temperature support to temperature sensors
-// V0.4 - 2015/10/12
-// - Added thermostat support
-// V0.5 - 2015/10/12
-// - Added Humidity sensor support
-// V0.6 - 2015/10/12
-// - Added Battery support
-// - Added low battery support for all sensors
-// - Added HomeSeer event support (using HomeKit switches...)
-// V0.7 - 2015/10/13
-// - You can add multiple HomeKit devices for the same HomeSeer device reference
-// - Added CarbonMonoxide sensor
-// - Added CarbonDioxide sensor
-// - Added onValues option to all binary sensors
-// V0.8 - 2015/10/14
-// - Added uuid_base parameter to all accessories
-// V0.9 - 2015/10/16
-// - Smoke sensor battery fix
-// - Added offEventGroup && offEventName to events (turn <event> on launches one HS event. turn <event> off can launch another HS event)
-// - Added GarageDoorOpener support
-// - Added Lock support
-// V0.10 - 2015/10/29
-// - Added Security System support
-// - Added Window support
-// - Added Window Covering support
-// - Added obstruction support to doors, windows, and windowCoverings
-// V0.11 - 2018/01/13
-// - Added battery support to Lock devices and added added battery services to other devices.
-// V0.12 - New Pollinng
-//
 // Remember to add platform to config.json. 
 //
 // You can get HomeSeer Device References by clicking a HomeSeer device name, then 
@@ -49,13 +12,11 @@
 // 
 
 
-//var Service = require("../api").homebridge.hap.Service;
-//var Characteristic = require("../api").homebridge.hap.Characteristic;
+
 var request = require("request");
-// var pollingtoevent = require("polling-to-event");
+
 var promiseHTTP = require("request-promise-native");
 
-// var isValidUUID = require("./lib/UUIDcheck");
 
 var http = require('http');
 var Accessory, Service, Characteristic, UUIDGen;
@@ -194,13 +155,12 @@ HomeSeerPlatform.prototype = {
 			updateEmitter = setInterval(
 				function () 
 					{
-					that.log ("************************");
 					// Now do the poll
 						promiseHTTP(_allStatusUrl)
 							.then( function(htmlString) 
 									{
 										_currentHSDeviceStatus = JSON.parse(htmlString).Devices;
-										console.log("Polled HomeSeer, Retrieved %s values",  _currentHSDeviceStatus.length);
+										that.log("Polled HomeSeer, Retrieved %s values",  _currentHSDeviceStatus.length);
 										for (var index in _currentHSDeviceStatus)
 										{
 											_HSValues[_currentHSDeviceStatus[index].ref] = _currentHSDeviceStatus[index].value;
@@ -212,7 +172,7 @@ HomeSeerPlatform.prototype = {
 								) // end then
 								.catch(function(err)
 									{
-										console.log("HomeSeer poll attempt failed with error %s", err);
+										that.log("HomeSeer poll attempt failed with error %s", err);
 									}
 								);//end catch
 
@@ -451,156 +411,10 @@ HomeSeerAccessory.prototype = {
         }.bind(this));
     },
 
-	/*
-    getValue: function (callback) {
-		
-		var returnValue = getHSValue(this.HSRef); 
-		
-		//The following switch statement "massages" the returnValue based on the service or Characteristic type.
-				switch( this.UUID)
-				{
-					case( Characteristic.BatteryLevel.UUID ):  
-					{
-						returnValue = getHSValue(this.HSRef);
-						break;
-					}
-					
-					// Next grouping is for characteristics using a percentage.
-					case( Characteristic.Brightness.UUID ): 
-					{
-						// Z-wave uses 99 as its maximum. Make that show as 100% on Home interface.
-						returnValue = (getHSValue(this.HSRef) == 99) ? 100 : getHSValue(this.HSRef);
-						break;
-					}
-					
-					case( Characteristic.CurrentTemperature.UUID ):  
-					{
-						// HomeKit uses celsius, so convert Fahrenheit to Celsius.
-						if (this.HStemperatureUnit && (this.HStemperatureUnit == "F")) returnValue = (ReturnValue -32 )* (5/9);
-						break;
-					}
-					
-					// The following items all use a binary state.
-					
-					case( Characteristic.On.UUID ):
-					{
-						returnValue = (getHSValue(this.HSRef) != 0) ? true : false;
-						break;
-					}						
 
-					default:
-					{
-						returnValue = -1;
-						this.log ("*** PROGRAMMING ERROR **** -  UUID not handled:" + this.UUID);
-					}
-				}		
-	
-		if(returnValue != -1) 
-			callback(null, returnValue)
-		else {
-			this.log("getValue failed for object UUID: " + this.UUID);
-			callback(error, -1);
-		}	
-    },
-	*/
-
-
-
-/*
-// getBatteryValue added to support reading of the Battery Level for locks using the batteryRef reference.
-    getBatteryValue: function (callback) {
-			callback(null, getHSValue(this.config.batteryRef));
-	 },
-	
-
-    getCurrentDoorState: function (callback) {
-        var ref = this.config.stateRef;
-        var url = this.access_url + "request=getstatus&ref=" + ref;
-
-        httpRequest(url, 'GET', function (error, response, body) {
-            if (error) {
-                this.log(this.name + ': getCurrentDoorState function failed: %s', error.message);
-                callback(error, 0);
-            }
-            else {
-                var status = JSON.parse(body);
-                var value = status.Devices[0].value;
-
-                this.log(this.name + ': getCurrentDoorState function succeeded: value=' + value);
-                if (this.config.stateOpenValues.indexOf(value) != -1)
-                    callback(null, Characteristic.CurrentDoorState.OPEN);
-                else if (this.config.stateClosedValues.indexOf(value) != -1)
-                    callback(null, Characteristic.CurrentDoorState.CLOSED);
-                else if (this.config.stateOpeningValues && this.config.stateOpeningValues.indexOf(value) != -1)
-                    callback(null, 2);
-                else if (this.config.stateClosingValues && this.config.stateClosingValues.indexOf(value) != -1)
-                    callback(null, 3);
-                else if (this.config.stateStoppedValues && this.config.stateStoppedValues.indexOf(value) != -1)
-                    callback(null, 4);
-                else {
-                    this.log(this.name + ': Error: value for current door state not in stateO0penValues, stateClosedValues, stateOpeningValues, stateClosingValues, stateStoppedValues');
-                    callback(null, 0);
-                }
-            }
-        }.bind(this));
-    },
-
-
-    getLockCurrentState: function (callback) {
-        var ref = this.config.lockRef;
-        var url = this.access_url + "request=getstatus&ref=" + ref;
-
-        httpRequest(url, 'GET', function (error, response, body) {
-            if (error) {
-                this.log(this.name + ': getLockCurrentState function failed: %s', error.message);
-                callback(error, 3);
-            }
-            else {
-                var status = JSON.parse(body);
-                var value = status.Devices[0].value;
-
-                this.log(this.name + ': getLockCurrentState function succeeded: value=' + value);
-                if (this.config.lockUnsecuredValues && this.config.lockUnsecuredValues.indexOf(value) != -1)
-                    callback(null, 0);
-                else if (this.config.lockSecuredValues && this.config.lockSecuredValues.indexOf(value) != -1)
-                    callback(null, 1);
-                else if (this.config.lockJammedValues && this.config.lockJammedValues.indexOf(value) != -1)
-                    callback(null, 2);
-                else {
-                    callback(null, 3);
-                }
-            }
-        }.bind(this));
-    },
-
-    setLockTargetState: function (state, callback) {
-        this.log(this.name + ': Setting target lock state to %s', state);
-
-        var ref = this.config.lockRef;
-        var value = 0;
-        if (state == 0 && this.config.unlockValue)
-            value = this.config.unlockValue;
-        else if (state == 1 && this.config.lockValue)
-            value = this.config.lockValue;
-
-        var url = this.access_url + "request=controldevicebyvalue&ref=" + ref + "&value=" + value;
-        httpRequest(url, 'GET', function (error, response, body) {
-            if (error) {
-                this.log(this.name + ': setLockTargetState function failed: %s', error.message);
-                callback(error);
-            }
-            else {
-                this.log(this.name + ': setLockTargetState function succeeded!');
-                callback();
-            }
-        }.bind(this));
-
-    },
-
-*/
 
     getServices: function () {
-		this.log("---------------getServices function called --------- Debug ----------------------------");
+		// this.log("---------------getServices function called --------- Debug ----------------------------");
         var services = []
 
         switch (this.config.type) {
@@ -1033,15 +847,11 @@ HomeSeerEvent.prototype = {
     }
 }
 
-function pollForUpdate(characteristic)
-{
-}
-
 
 function updateCharacteristicFromHSData(characteristicObject)
 {
 	//Debug
-	console.log("** Debug ** - Updating Characteristic %s with name %s", characteristicObject.UUID, characteristicObject.displayName)
+	// console.log("** Debug ** - Updating Characteristic %s with name %s", characteristicObject.UUID, characteristicObject.displayName)
 		// character stores a 
 	if (characteristicObject.HSRef)
 	{
@@ -1180,8 +990,8 @@ function updateCharacteristic(characteristicObject)
 	
 		promiseHTTP(url)
 			.then( function(htmlString) {
-				console.log("");
-				console.log("	*** Debug *** Promise htmlString %s", htmlString);
+				// console.log("");
+				// console.log("	*** Debug *** Promise htmlString %s", htmlString);
 				
 				var thisDevice = JSON.parse(htmlString).Devices;
 				console.log("");
