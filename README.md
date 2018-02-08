@@ -18,7 +18,7 @@ This Plugin removes support for the following device types (Sorry, but I don't h
 * Door (but you can still configure a Lock)
 * Garage Door Opener
 * Security System
-* Thermostats (but thermometers can still be configured!)
+* Thermostats (but Temperature Sensors can still be configured!)
 * Window Coverings
   
 ## Certain config.json Settings No longer supported
@@ -53,12 +53,11 @@ Windows
 ## All Accessories options
 ```js
 "ref":8,                            // Required - HomeSeer Device Reference (To get it, select the HS Device - then Advanced Tab)
-"type":"Lightbulb",                 // Optional - Lightbulb is the default
+"type":"Lightbulb",                 // Required - Identifies a supported device type.
 "name":"My Light",                  // Optional - HomeSeer device name is the default
 "uuid_base":"SomeUniqueId2"         // Optional - HomeKit identifier will be derived from this parameter instead of the name. You SHOULD add this parameter to all accessories !
-"poll" : 60,                        // Optional - Override default polling rate in seconds to check for changed device status
-"statusUpdateCount" : 10            // Optional - Override the number of times that the device is checked for a status change after its value is updated. Checks occur every 1 second.
-```
+
+
 See [index.js](https://raw.githubusercontent.com/jrhubott/homebridge-homeseer/master/index.js) for full configuration information or [config.js](https://raw.githubusercontent.com/jrhubott/homebridge-homeseer/master/config/config.json) for sample configuration
 
 
