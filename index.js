@@ -80,22 +80,18 @@
 //
 //
 // SUPORTED TYPES:
-// - Lightbulb              (can_dim, onValue, offValue options)
-// - Fan                    (onValue, offValue options)
-// - Switch                 (onValue, offValue options)
-// - Outlet                 (onValue, offValue options)
+// - Lightbulb              (can_dim  options)
+// - Switch                 
+// - Outlet                 
 // - TemperatureSensor      (temperatureUnit=C|F)
-// - HumiditySensor         (HomeSeer device value in %  - batteryRef, batteryThreshold options)
-// - LightSensor            (HomeSeer device value in Lux  - batteryRef, batteryThreshold options)
-// - ContactSensor          (onValues, batteryRef, batteryThreshold options)
-// - MotionSensor           (onValues, batteryRef, batteryThreshold options)
-// - LeakSensor             (onValues, batteryRef, batteryThreshold options)
-// - OccupancySensor        (onValues, batteryRef, batteryThreshold options)
-// - SmokeSensor            (onValues, batteryRef, batteryThreshold options)
-// - CarbonMonoxideSensor   (onValues, batteryRef, batteryThreshold options)
-// - CarbonDioxideSensor    (onValues, batteryRef, batteryThreshold options)
-// - Battery                (batteryThreshold option)
-// - Lock                   (unsecured, secured, jammed options)
+// - ContactSensor          (batteryRef, batteryThreshold options)
+// - MotionSensor           (batteryRef, batteryThreshold options)
+// - LeakSensor             (batteryRef, batteryThreshold options)
+// - OccupancySensor        (batteryRef, batteryThreshold options)
+// - SmokeSensor            (batteryRef, batteryThreshold options)
+// - CarbonMonoxideSensor   (batteryRef, batteryThreshold options)
+// - CarbonDioxideSensor    (batteryRef, batteryThreshold options)
+// - Lock                   
 
 
 
@@ -152,8 +148,8 @@ function HomeSeerPlatform(log, config, api) {
     if(config)
 		if (this.config["poll"]==null)
 		{
-        this.config["poll"] = 60;
-		this.config["platformPoll"] = 60;
+        this.config["poll"] = 10;
+		this.config["platformPoll"] = 10;
 		}
 		else
 		{
@@ -199,7 +195,7 @@ HomeSeerPlatform.prototype = {
 		_globalHSRefs.sort();
 		_allStatusUrl = this.config["host"] + "/JSON?request=getstatus&ref=" + _globalHSRefs.concat();
 		
-		this.log("Global Status URL is " + _allStatusUrl);
+		this.log("Retrieve All HomeSeer Device Status URL is " + _allStatusUrl);
 		
         var url = this.config["host"] + "/JSON?request=getstatus&ref=" + refList.concat();
 		
@@ -281,11 +277,6 @@ function HomeSeerAccessory(log, platformConfig, accessoryConfig, status) {
 
     var that = this; // May be unused?
 
-    if (this.config.poll==null)
-    {
-        //Default to 1 minute polling cycle
-        this.config.poll = platformConfig["poll"];
-    }
 }
 
 HomeSeerAccessory.prototype = {
@@ -398,8 +389,8 @@ HomeSeerAccessory.prototype = {
  
 		 // For debugging
 		 //console.log ("Debug - Called setHSValue has URL = %s", url);
-		 
-		 console.log("Sending URL %s", url);
+ 
+		 // console.log("Sending URL %s", url);
 
 		 promiseHTTP(url)
 			.then( function(htmlString) {
@@ -636,7 +627,7 @@ HomeSeerAccessory.prototype = {
 			
             case "Lightbulb": 
 			default: {
-				this.log("** Debug ** - Setting up bulb %s with can_dim %s", this.config.name, this.config.can_dim);
+				// this.log("** Debug ** - Setting up bulb %s with can_dim %s", this.config.name, this.config.can_dim);
                 var lightbulbService = new Service.Lightbulb();
 				lightbulbService.isPrimaryService = true;
 				lightbulbService.displayName = "Service.Lightbulb"
@@ -653,7 +644,7 @@ HomeSeerAccessory.prototype = {
 				_statusObjects.push(lightbulbService.getCharacteristic(Characteristic.On));
 		    
                 if (this.config.can_dim == null || this.config.can_dim == true) {
-					this.log("       ** Debug ** Adding a Brightness service");
+					// this.log("       ** Debug ** Adding a Brightness service");
 					
                     lightbulbService
                         .addCharacteristic(new Characteristic.Brightness())
@@ -913,7 +904,7 @@ function updateCharacteristic(characteristicObject)
 	}
 	
 	var url = _accessURL +  "request=getstatus&ref=" + characteristicObject.HSRef;
-	console.log("** DEBUG ** -- update URL is %s", url);
+	// console.log("** DEBUG ** -- update URL is %s", url);
 	
 		promiseHTTP(url)
 			.then( function(htmlString) {
