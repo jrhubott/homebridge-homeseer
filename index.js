@@ -306,6 +306,7 @@ HomeSeerAccessory.prototype = {
 			// Uncomment any UUID's actually used!
 				switch( this.UUID)
 				{
+					case(Characteristic.RotationSpeed.UUID):
 					case(Characteristic.Brightness.UUID ): 
 					{
 						// Maximum ZWave value is 99 so covert 100% to 99!
@@ -623,6 +624,34 @@ HomeSeerAccessory.prototype = {
 								
                 break;
             }
+            case "Fan": {
+                var fanService = new Service.Fan
+				fanService.isPrimaryService = true;
+				fanService.displayName = "Service.Fan";
+				
+				fanService
+					.getCharacteristic(Characteristic.On)
+					.HSRef = this.config.ref;				
+                fanService
+                    .getCharacteristic(Characteristic.On)
+                    .on('set', this.setHSValue.bind(lightbulbService.getCharacteristic(Characteristic.On)));
+					
+				_statusObjects.push(fanService.getCharacteristic(Characteristic.On));					
+
+                if (this.config.can_dim) {
+                    fanService
+                        .addCharacteristic(new Characteristic.RotationSpeed())
+						.HSRef = this.config.ref;
+						
+					fanService
+						.getCharacteristic(Characteristic.RotationSpeed)
+						.on('set', this.setHSValue.bind(lightbulbService.getCharacteristic(Characteristic.On)));
+				_statusObjects.push(fanService.getCharacteristic(Characteristic.RotationSpeed));						
+                }
+
+                services.push(fanService);
+                break;
+            }			
 			
 			
             case "Lightbulb": 
@@ -837,6 +866,7 @@ function updateCharacteristicFromHSData(characteristicObject)
 				characteristicObject.updateValue(newValue);
 				break;
 			}
+			case (characteristicObject.UUID == Characteristic.RotationSpeed):
 			case (characteristicObject.UUID == Characteristic.Brightness.UUID):
 			{
 					// Zwave uses 99 as its maximum. Make it appear as 100% in Homekit
