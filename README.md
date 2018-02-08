@@ -20,6 +20,8 @@ This Plugin removes support for the following device types (Sorry, but I don't h
 * Door (but you can still configure a Lock)
 * Fan
 * Garage Door Opener
+* HumiditySensor
+* LightSensor
 * Security System
 * Thermostats (but Temperature Sensors can still be configured!)
 * Window Coverings
