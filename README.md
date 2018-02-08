@@ -11,6 +11,8 @@ This version uses a new polling mechanism in which all HomeSeer devices are poll
 
 This plugin also changes the way in which device characteristics are updated. In particular, the brightness characteristic of dimmable lights is now updated on the Apple Home application in "real time" (well, on each poll), so you no longer need to refresh the screen in the Home application to see brighness changes that occur due to manual interactions with the Z-Wave switch or via HomeSeer.
 
+Code architecture has been changed to use JavaScript native Promises for HTTP access. Required node version has been updated to Version 4.0 to ensure that Promises are implemetned.
+
 ## Unsupported Devices
 This Plugin removes support for the following device types (Sorry, but I don't have these device types so I can't test them. Therefore, they have been removed):
 
