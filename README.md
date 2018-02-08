@@ -35,6 +35,9 @@ Note that "onValues", "offValues", "LockSecuredValues", "LockUnsecuredValues", a
 * Get device type from HomeSeer rather than manual input via config.json.
 * Automatically identify devices by polling HomeSeer.
 
+## Cautions
+Extreme caution should be used when using this plugin with sensors and, in particular, any safety oriented sensors. This plugin does not provide real-time update to the sensor status and updates are delayed by at least the polling period. Sensor status should not be relied on for critical safety or security applications.
+
 ## Credits
 This plugin is for use with [homebridge](https://github.com/nfarina/homebridge) Apple iOS Homekit support application to support integration with the [Homeseer V3](http://www.homeseer.com/home-control-software.html) software
 
