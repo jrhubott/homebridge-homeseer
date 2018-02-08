@@ -18,7 +18,7 @@ This Plugin removes support for the following device types (Sorry, but I don't h
 
 * Battery (now added as a service to the other devices; no longer a separate device)
 * Door (but you can still configure a Lock)
-* Fan
+* Fan  (may be added back in future.)
 * Garage Door Opener
 * HumiditySensor
 * LightSensor
