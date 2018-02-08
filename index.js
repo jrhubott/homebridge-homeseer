@@ -1,6 +1,5 @@
 'use strict';
 
-//
 // Remember to add platform to config.json. 
 //
 // You can get HomeSeer Device References by clicking a HomeSeer device name, then 
@@ -10,6 +9,96 @@
 // If you set this parameter to some unique identifier, the HomeKit accessory ID will be based on uuid_base instead of the accessory name.
 // It is then easier to change the accessory name without messing the HomeKit database.
 // 
+//
+// Example:
+// "platforms": [
+//     {
+//         "platform": "HomeSeer",              // Required
+//         "name": "HomeSeer",                  // Required
+//         "host": "http://192.168.3.4:81",     // Required - If you did setup HomeSeer authentication, use "http://user:password@ip_address:port"
+//
+//         "events":[                           // Optional - List of Events - Currently they are imported into HomeKit as switches
+//            {
+//               "eventGroup":"My Group",       // Required - The HomeSeer event group
+//               "eventName":"My On Event",     // Required - The HomeSeer event name
+//               "offEventGroup":"My Group",    // Optional - The HomeSeer event group for turn-off <event>
+//               "offEventName":"My Off Event", // Optional - The HomeSeer event name for turn-off <event>
+//               "name":"Test",                 // Optional - HomeSeer event name is the default
+//               "uuid_base":"SomeUniqueId"     // Optional - HomeKit identifier will be derived from this parameter instead of the name
+//            }
+//         ],
+//
+//         "accessories":[                      // Required - List of Accessories
+//            {
+//              "ref":8,                        // Required - HomeSeer Device Reference (To get it, select the HS Device - then Advanced Tab) 
+//              "type":"Lightbulb",             // Optional - Lightbulb is the default
+//              "name":"My Light",              // Optional - HomeSeer device name is the default
+//              "can_dim":true,                 // Optional - true is the default - false for a non dimmable lightbulb
+//              "uuid_base":"SomeUniqueId2"     // Optional - HomeKit identifier will be derived from this parameter instead of the name. You SHOULD add this parameter to all accessories !
+//            },
+//            {
+//              "ref":9                         // This is a dimmable Lightbulb by default. Recommeded that you explicitly define the type rather than rely on this default
+//            },
+//            {
+//              "ref":58,                       // This is a controllable outlet
+//              "type":"Outlet"
+//            },
+//            {
+//              "ref":111,                      // Required - HomeSeer Device Reference for your sensor
+//              "type":"TemperatureSensor",     // Required for a temperature sensor
+//              "temperatureUnit":"F",          // Optional - C is the default
+//              "name":"Bedroom temp",          // Optional - HomeSeer device name is the default
+//              "batteryRef":112,               // Optional - HomeSeer device reference for the sensor battery level
+//              "batteryThreshold":15           // Optional - If sensor battery level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 10
+//            },
+//            {
+//              "ref":34,                       // Required - HomeSeer Device Reference for your sensor
+//              "type":"SmokeSensor",           // Required for a smoke sensor
+//              "name":"Kichen smoke detector", // Optional - HomeSeer device name is the default
+//              "batteryRef":35,                // Optional - HomeSeer device reference for the sensor battery level
+//              "batteryThreshold":15,          // Optional - If sensor battery level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 10
+//            },
+//            {
+//              "ref":34,                       // Required - HomeSeer Device Reference for your sensor (Here it's the same device as the SmokeSensor above)
+//              "type":"CarbonMonoxideSensor",  // Required for a carbon monoxide sensor
+//              "name":"Kichen CO detector",    // Optional - HomeSeer device name is the default
+//              "batteryRef":35,                // Optional - HomeSeer device reference for the sensor battery level
+//              "batteryThreshold":15,          // Optional - If sensor battery level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 10
+//            },
+//            {
+//              "ref":210,                      // Required - HomeSeer Device Reference of a Lock
+//              "type":"Lock",                  // Required for a Lock
+//              "batteryRef":35,                // Optional - HomeSeer device reference for the sensor battery level
+//              "batteryThreshold":15,          // Optional - If sensor battery level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 10
+//            },
+//            {
+//              "ref":115,                      // Required - HomeSeer Device Reference for a device holding battery level (0-100)
+//              "type":"Battery",               // Required for a Battery
+//              "name":"Roomba battery",        // Optional - HomeSeer device name is the default
+//              "batteryThreshold":15           // Optional - If the level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 10
+//            },
+//         ]
+//     }
+// ],
+//
+//
+// SUPORTED TYPES:
+// - Lightbulb              (can_dim, onValue, offValue options)
+// - Fan                    (onValue, offValue options)
+// - Switch                 (onValue, offValue options)
+// - Outlet                 (onValue, offValue options)
+// - TemperatureSensor      (temperatureUnit=C|F)
+// - HumiditySensor         (HomeSeer device value in %  - batteryRef, batteryThreshold options)
+// - LightSensor            (HomeSeer device value in Lux  - batteryRef, batteryThreshold options)
+// - ContactSensor          (onValues, batteryRef, batteryThreshold options)
+// - MotionSensor           (onValues, batteryRef, batteryThreshold options)
+// - LeakSensor             (onValues, batteryRef, batteryThreshold options)
+// - OccupancySensor        (onValues, batteryRef, batteryThreshold options)
+// - SmokeSensor            (onValues, batteryRef, batteryThreshold options)
+// - CarbonMonoxideSensor   (onValues, batteryRef, batteryThreshold options)
+// - CarbonDioxideSensor    (onValues, batteryRef, batteryThreshold options)
+// - Battery                (batteryThreshold option)
+// - Lock                   (unsecured, secured, jammed options)
 
 
 
