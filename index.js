@@ -215,6 +215,13 @@ HomeSeerPlatform.prototype = {
         var url = this.config["host"] + "/JSON?request=getstatus&ref=" + refList.concat();
 		
 	// ********************************	
+	// Add a check that the HomeSeer web server is available. Maybe via a promise which contains a SetInterval loop
+	// To ping the server until you get a response and then continue to do remaining processing.
+	///
+	/*
+			waitForHomeseer = new Promise(function(resolve, reject) { add a loop to check that HomeSeer is available }); 
+	
+	*/
 		
 		promiseHTTP(url).then( function(body) {
                 this.log('HomeSeer status function succeeded!');
