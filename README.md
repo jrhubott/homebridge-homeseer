@@ -24,6 +24,12 @@ This Plugin removes support for the following device types (Sorry, but I don't h
 ## Certain config.json Settings No longer supported
 Note that "onValues", "offValues", "LockSecuredValues", "LockUnsecuredValues", and "LockJammedValues" config.json settings are not implemented. Instead this plugin uses the standared Z-Wave values for these settings.  If a specific use case exist for implementing these settings (or if the plugin doesn't work without them for your Z-Wave device), please indicate that as an issue and support may be implemented in a future revision.
 
+## Future Work
+* Add in additional data checking to ensure config.json settings match device type information retrieved from HomeSeer.
+* Get device name from HomeSeer rather than manual input via config.json.
+* Get device type from HomeSeer rather than manual input via config.json.
+* Automatically identify devices by polling HomeSeer.
+
 ## Credits
 This plugin is for use with [homebridge](https://github.com/nfarina/homebridge) Apple iOS Homekit support application to support integration with the [Homeseer V3](http://www.homeseer.com/home-control-software.html) software
 
