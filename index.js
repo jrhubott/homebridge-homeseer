@@ -160,7 +160,7 @@ HomeSeerPlatform.prototype = {
 							.then( function(htmlString) 
 									{
 										_currentHSDeviceStatus = JSON.parse(htmlString).Devices;
-										that.log("Polled HomeSeer, Retrieved %s values",  _currentHSDeviceStatus.length);
+										that.log("Polled HomeSeer: Retrieved values for %s HomeSeer devices.",  _currentHSDeviceStatus.length);
 										for (var index in _currentHSDeviceStatus)
 										{
 											_HSValues[_currentHSDeviceStatus[index].ref] = _currentHSDeviceStatus[index].value;
@@ -192,10 +192,6 @@ function HomeSeerAccessory(log, platformConfig, accessoryConfig, status) {
     this.ref = status.ref;
     this.name = status.name
     this.model = status.device_type_string;
-    this.onValue = 100;
-    this.offValue = 0;
-
-    this.statusCharacteristic = null;
 
     this.access_url = platformConfig["host"] + "/JSON?";
 	_accessURL = this.access_url;
@@ -207,12 +203,6 @@ function HomeSeerAccessory(log, platformConfig, accessoryConfig, status) {
 
     if (this.config.uuid_base)
         this.uuid_base = this.config.uuid_base;
-
-    if (this.config.onValue)
-        this.onValue = this.config.onValue;
-
-    if (this.config.offValue)
-        this.offValue = this.config.offValue;
 
     var that = this; // May be unused?
 
@@ -234,9 +224,8 @@ HomeSeerAccessory.prototype = {
 		var url;
 		var callbackValue = 1;
 		var transmitValue = level;
-
 		
-		// For Debugging
+		// Uncomment for Debugging
 		// console.log ("** Debug ** - Called setHSValue with level %s for UUID %s", level, this.UUID);
 		// console.log ("** Debug ** access_url is %s", _accessURL);
 		
@@ -253,6 +242,7 @@ HomeSeerAccessory.prototype = {
 				{
 					case(Characteristic.Brightness.UUID ): 
 					{
+						// Maximum ZWave value is 99 so covert 100% to 99!
 						transmitValue = (transmitValue == 100) ? 99 : level;
 						
 						setHSValue(this.HSRef, transmitValue); 
@@ -279,16 +269,9 @@ HomeSeerAccessory.prototype = {
 					case(Characteristic.On.UUID ):  
 					{
 						// For devices such as dimmers, HomeKit sends both "on" and "brightness" when you adjust brightness.
-						//  But Z-Wave only expects a brighness value. So, if the device is already on (non-Zero ZWave vallue)
+						// But Z-Wave only expects a brighness value if light is already on. So, if the device is already on (non-Zero ZWave value)
 						// then don't send again.
-						// And Only send "on" if the device isn't already on.
-						// Also, because a dimmer will set to its "last value" and that won't be known until the next poll from HomeSeer
-						// Assume a last-value of about 50% to avoid too much jumping of the brightness slider.
 						// HomeKit level == false means turn off, level == true means turn on.
-						
-						
-						// transmitValue = ( (level == true) ? 255 : 0);
-						// callbackValue = (( level != false) ? 1 : 0 );
 						
 						if (level == false) 
 							{
@@ -316,8 +299,6 @@ HomeSeerAccessory.prototype = {
 								// noUpdate = true; // or maybe don't transmit at all (testing this feature)
 							}
 						}
-					
-						
 						break; // 
 					}
 
@@ -331,7 +312,6 @@ HomeSeerAccessory.prototype = {
 						return;
 						break;
 					}
-
 				}
 		
 		if (isNaN(transmitValue)) 
@@ -356,8 +336,6 @@ HomeSeerAccessory.prototype = {
 				{ 	console.log("Error attempting to update %s, with error %s", this.displayName, this.UUID, err);
 				}.bind(this)
 			);
-
-	
     },
 
 
@@ -366,7 +344,6 @@ HomeSeerAccessory.prototype = {
         var services = []
 
         switch (this.config.type) {
-			/*
 			
             case "Switch": {
                 var switchService = new Service.Switch();
@@ -378,16 +355,14 @@ HomeSeerAccessory.prototype = {
 					
                 switchService
                     .getCharacteristic(Characteristic.On)
-                    .on('set', this.setPowerState.bind(this));
+                    .on('set', this.setHSValue.bind(switchService.getCharacteristic(Characteristic.On)));
+				_statusObjects.push(switchService.getCharacteristic(Characteristic.On));
 
-                this.statusCharacteristic = switchService.getCharacteristic(Characteristic.On);
                 services.push(switchService);
                 break;
             }
-			*/
+
 			
-			
-			/*
             case "Outlet": {
                 var outletService = new Service.Outlet();
 				outletService.isPrimaryService = true;
@@ -398,15 +373,12 @@ HomeSeerAccessory.prototype = {
 				
                 outletService
                     .getCharacteristic(Characteristic.On)
-                    .on('set', this.setPowerState.bind(this))
-                    .on('get', this.getPowerState.bind(this));
+                    .on('set', this.setHSValue.bind(outletService.getCharacteristic(Characteristic.On)));
 
-                this.statusCharacteristic = outletService.getCharacteristic(Characteristic.On);
+				_statusObjects.push(outletService.getCharacteristic(Characteristic.On));
                 services.push(outletService);
                 break;
-            } */
-			
-			
+            }
 			
             case "TemperatureSensor": {
                 var temperatureSensorService = new Service.TemperatureSensor();
@@ -420,9 +392,6 @@ HomeSeerAccessory.prototype = {
 				temperatureSensorService
                     .getCharacteristic(Characteristic.CurrentTemperature)
 					.HStemperatureUnit = ((this.config.temperatureUnit) ? this.config.temperatureUnit : "F" );
-				
-                temperatureSensorService
-                    .getCharacteristic(Characteristic.CurrentTemperature).setProps({ minValue: -100 });
 
                 services.push(temperatureSensorService);
 				
@@ -611,7 +580,6 @@ HomeSeerAccessory.prototype = {
                 if (this.config.can_dim == null || this.config.can_dim == true) {
 					this.log("       ** Debug ** Adding a Brightness service");
 					
-					this.onValue = 255; // Force to 255 for all Z-Wave dimmers, else the lights will flash while dimming
                     lightbulbService
                         .addCharacteristic(new Characteristic.Brightness())
 						.HSRef = this.config.ref;
@@ -708,25 +676,18 @@ HomeSeerEvent.prototype = {
         if (value == 0 && this.off_url) {
             url = this.off_url;
         }
-
-        httpRequest(url, 'GET', function (error, response, body) {
-            if (error) {
-                this.log(this.name + ': launchEvent function failed: %s', error.message);
-                callback(error);
-            }
-            else {
-                this.log(this.name + ': launchEvent function succeeded!');
-                callback();
-            }
-
-            if(this.off_url==null && value != 0)
-            {
-                setTimeout(function() {
-                    this.log(this.name + ': Momentary switch reseting to 0');
-                    this.switchService.getCharacteristic(Characteristic.On).setValue(0);
-                }.bind(this),2000);
-            }
-
+			
+		promiseHTTP(url)
+			.then( function(htmlString) {
+					console.log(this.name + ': launchEvent function succeeded!');
+					callback(null);
+			}.bind(this))
+			.catch(function(err)
+				{ 	console.log(this.name + ': launchEvent function failed: %s', err);
+					callback(err);
+				}.bind(this)
+			);
+			
         }.bind(this));
     },
 
@@ -755,9 +716,11 @@ HomeSeerEvent.prototype = {
 
 function updateCharacteristicFromHSData(characteristicObject)
 {
+	
+	// This performs the update to the HomeKit value from data received from HomeSeer
 	//Debug
 	// console.log("** Debug ** - Updating Characteristic %s with name %s", characteristicObject.UUID, characteristicObject.displayName)
-		// character stores a 
+
 	if (characteristicObject.HSRef)
 	{
 		var newValue = getHSValue(characteristicObject.HSRef);
@@ -793,16 +756,6 @@ function updateCharacteristicFromHSData(characteristicObject)
 				}
 				break;
 			}
-			/*
-			case(characteristicObject.UUID == Characteristic.LockTargetState.UUID):
-			{
-				// Set to 0 = UnSecured, 1 - Secured, 2 = Jammed.
-				var lockState = (newValue == 0) ? 0 : 1;
-				characteristicObject.updateValue(lockState);
-				break;
-			}
-			*/
-			// case(characteristicObject.UUID == Characteristic.LockTargetState.UUID):
 			
 			case( characteristicObject.UUID == Characteristic.CarbonDioxideDetected.UUID ):
 			case( characteristicObject.UUID == Characteristic.CarbonMonoxideDetected.UUID):
@@ -827,7 +780,7 @@ function updateCharacteristicFromHSData(characteristicObject)
 				characteristicObject.updateValue( (newValue == 99) ? 100 : newValue);
 				break;
 			}
-			case (characteristicObject.UUID == Characteristic.CurrentTemperature):
+			case (characteristicObject.UUID == Characteristic.CurrentTemperature.UUID):
 			{
 				// HomeKit uses celsius, so if HS is using Fahrenheit, convert to Celsius.
 				if (characteristicObject.HStemperatureUnit && (characteristicObject.HStemperatureUnit == "F")) 
@@ -837,15 +790,15 @@ function updateCharacteristicFromHSData(characteristicObject)
 				break;
 			}
 
-
 			default:
 			{
 					console.log("** WARNING ** -- Possible Incorrect Value Assignment for characteristic %s set to value %s", characteristicObject.displayName, newValue);
 					characteristicObject.updateValue( newValue);
 			}
 		}; //end switch
-				
-		// that.log("   %s value after update is: %s", characteristicObject.displayName, characteristicObject.value);
+		
+		// Uncomment for debugging
+		// console.log("** Debug ** -   %s value after update is: %s", characteristicObject.displayName, characteristicObject.value);
 	} // end if
 }
 
