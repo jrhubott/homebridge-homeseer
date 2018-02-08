@@ -284,7 +284,7 @@ HomeSeerAccessory.prototype = {
 	
 					case(Characteristic.On.UUID ):  
 					{
-						// For devices such as dimmers, HomeKit sends both "on" and "brighness" when you adjust brightness.
+						// For devices such as dimmers, HomeKit sends both "on" and "brightness" when you adjust brightness.
 						//  But Z-Wave only expects a brighness value. So, if the device is already on (non-Zero ZWave vallue)
 						// then don't send again.
 						// And Only send "on" if the device isn't already on.
@@ -292,24 +292,26 @@ HomeSeerAccessory.prototype = {
 						// Assume a last-value of about 50% to avoid too much jumping of the brightness slider.
 						// HomeKit level == false means turn off, level == true means turn on.
 						
+						
 						// transmitValue = ( (level == true) ? 255 : 0);
-
+						// callbackValue = (( level != false) ? 1 : 0 );
+						
 						if (level == false) 
 							{
 								transmitValue = 0 ; 
 								callbackValue = 0;
 								setHSValue(this.HSRef, 0); // assume success and set to 0 to avoid jumping of any associated dimmer / range slider.
 						}
-						else
+						else // turn on!
 						{
-							if(getHSValue(this.HSRef) == 0)	// if it is already off, then turn fully on.
+							if(getHSValue(this.HSRef) == 0)	// if it is currently off, then turn fully on.
 							{
 								// if it is off, turn on to full level.
-								transmitValue = 99;
+								transmitValue = 255;
 								setHSValue(this.HSRef, 99);
 								callbackValue = 1; // and callback with a 1 meaning it was turned on
 							}
-							else
+							else // If it appears to be on, then send same value!
 							{
 								// if it is on then use current value.
 								// don't use the "255" value because Z-Wave dimmer's can be ramping up/down 
@@ -317,10 +319,10 @@ HomeSeerAccessory.prototype = {
 								// if a poll occurs during ramping.
 								transmitValue = getHSValue(this.HSRef); // if it is already on, then just transmit its current value
 								callbackValue = 1;
-								noUpdate = true; // or maybe don't transmit at all (testing this feature)
+								// noUpdate = true; // or maybe don't transmit at all (testing this feature)
 							}
 						}
-						
+					
 						
 						break; // 
 					}
@@ -347,9 +349,10 @@ HomeSeerAccessory.prototype = {
  
 		 // For debugging
 		 //console.log ("Debug - Called setHSValue has URL = %s", url);
+		 
+		 console.log("Sending URL %s", url);
 
-		 if (!noUpdate)
-		 {			 promiseHTTP(url)
+		 promiseHTTP(url)
 			.then( function(htmlString) {
 					console.log(this.displayName + ': HomeSeer setHSValue function succeeded!');
 					callback(null, callbackValue);
@@ -359,10 +362,7 @@ HomeSeerAccessory.prototype = {
 				{ 	console.log("Error attempting to update %s, with error %s", this.displayName, this.UUID, err);
 				}.bind(this)
 			);
-		 } else
-		 {
-			 callback(null, callbackValue);
-		 }
+
 	
     },
 
@@ -635,11 +635,7 @@ HomeSeerAccessory.prototype = {
 
             case "Lightbulb": 
 			default: {
-
-                //Better default
-                if (this.config.statusUpdateCount == null)
-                    this.config.statusUpdateCount = 5;
-
+				this.log("** Debug ** - Setting up bulb %s with can_dim %s", this.config.name, this.config.can_dim);
                 var lightbulbService = new Service.Lightbulb();
 				lightbulbService.isPrimaryService = true;
 				lightbulbService.displayName = "Service.Lightbulb"
@@ -653,9 +649,10 @@ HomeSeerAccessory.prototype = {
                     .on('set', this.setHSValue.bind(lightbulbService.getCharacteristic(Characteristic.On)));
                     // .on('get', this.getPowerState.bind(this));
 					
-
+				_statusObjects.push(lightbulbService.getCharacteristic(Characteristic.On));
 		    
                 if (this.config.can_dim == null || this.config.can_dim == true) {
+					this.log("       ** Debug ** Adding a Brightness service");
 					
 					this.onValue = 255; // Force to 255 for all Z-Wave dimmers, else the lights will flash while dimming
                     lightbulbService
@@ -670,12 +667,10 @@ HomeSeerAccessory.prototype = {
 						.getCharacteristic(Characteristic.Brightness)
                         .on('set', this.setHSValue.bind(lightbulbService.getCharacteristic(Characteristic.Brightness)));
                         // .on('get', this.getValue.bind(this));
+						
+					_statusObjects.push(lightbulbService.getCharacteristic(Characteristic.Brightness));
                 }
-				
-				// For an alternate status update
-				_statusObjects.push(lightbulbService.getCharacteristic(Characteristic.On));
-				_statusObjects.push(lightbulbService.getCharacteristic(Characteristic.Brightness));
-				
+
                 services.push(lightbulbService);
 
                 break;
