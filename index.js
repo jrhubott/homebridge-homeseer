@@ -13,8 +13,6 @@
 
 
 
-var request = require("request"); // Mostly replaced by "promises" based HTTP.
-
 var promiseHTTP = require("request-promise-native");
 
 var Accessory, Service, Characteristic, UUIDGen;
@@ -47,17 +45,6 @@ module.exports = function (homebridge) {
     // For platform plugin to be considered as dynamic platform plugin,
     // registerPlatform(pluginName, platformName, constructor, dynamic), dynamic must be true
     homebridge.registerPlatform("homebridge-HomeSeerPlatform", "HomeSeer", HomeSeerPlatform, true);
-}
-
-
-function httpRequest(url, method, callback) {
-    request({
-        url: url,
-        method: method
-    },
-        function (error, response, body) {
-            callback(error, response, body)
-        })
 }
 
 function getHSValue(ref) {
@@ -129,12 +116,10 @@ HomeSeerPlatform.prototype = {
 		this.log("Global Status URL is " + _allStatusUrl);
 		
         var url = this.config["host"] + "/JSON?request=getstatus&ref=" + refList.concat();
-        httpRequest(url, "GET", function (error, response, body) {
-            if (error) {
-                this.log('HomeSeer status function failed: %s', error.message);
-                callback(foundAccessories);
-            } //endif
-            else {
+		
+	// ********************************	
+		
+		promiseHTTP(url).then( function(body) {
                 this.log('HomeSeer status function succeeded!');
                 var response = JSON.parse(body);
                 for (var i = 0; i < this.config.accessories.length; i++) {
@@ -178,8 +163,14 @@ HomeSeerPlatform.prototype = {
 					);	//end setInterval function for polling loop
 			
 			callback(foundAccessories);
-            }
-        }.bind(this));
+            
+        }.bind(this))
+		.catch (function(err) 
+			{ 
+			this.log('HomeSeer status function failed: %s', error.message); 
+			callback(foundAccessories)
+			});
+
 
     }
 }
