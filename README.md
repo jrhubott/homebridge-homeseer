@@ -6,20 +6,25 @@ This plugin is still undergoing testing! See notes below regarding un-implemente
 
 Note: This package is based on version 1.0.17 of the jrhubott/homebridge-homeseer plugin. 
 
+## What's Changed - New Features
 This version uses a new polling mechanism in which all HomeSeer devices are polled in a single HTTP call rather than individual HTTP calls. This reduces the polling stress on HomeSeer and allows for much more frequent polling. E.g., in testing, a 100 Z-Wave node system shows minimal load even with poll times as low as 5 seconds. Only the sysem polling time setting is used, individual polling settings are no longer needed. 
 
 This plugin also changes the way in which device characteristics are updated. In particular, the brightness characteristic of dimmable lights is now updated on the Apple Home application in "real time" (well, on each poll), so you no longer need to refresh the screen in the Home application to see brighness changes that occur due to manual interactions with the Z-Wave switch or via HomeSeer.
 
+## Unsupported Devices
 This Plugin removes support for the following device types (Sorry, but I don't have these device types so I can't test them. Therefore, they have been removed):
-  Battery (now added as a service to the other devices; no longer a separate device)
-  Door (but you can still configure a Lock)
-  Garage Door Opener
-  Security System
-  Thermostats (but thermometers can still be configured!)
-  Window Coverings
-  
-Note that "onValues", "offValues", "LockSecuredValues", "LockUnsecuredValues", and "LockJammedValues" config.json settings are not implemented. Instead this plugin uses the standared Z-Wave values for these settings.  If a specific use case exist for implementing these settings (or if the plugin doesn't work without them for your Z-Wave device), please indicate that as an issue and support may be implemented in a future revision..
 
+* Battery (now added as a service to the other devices; no longer a separate device)
+* Door (but you can still configure a Lock)
+* Garage Door Opener
+* Security System
+* Thermostats (but thermometers can still be configured!)
+* Window Coverings
+  
+## Certain config.json Settings No longer supported
+Note that "onValues", "offValues", "LockSecuredValues", "LockUnsecuredValues", and "LockJammedValues" config.json settings are not implemented. Instead this plugin uses the standared Z-Wave values for these settings.  If a specific use case exist for implementing these settings (or if the plugin doesn't work without them for your Z-Wave device), please indicate that as an issue and support may be implemented in a future revision.
+
+## Credits
 This plugin is for use with [homebridge](https://github.com/nfarina/homebridge) Apple iOS Homekit support application to support integration with the [Homeseer V3](http://www.homeseer.com/home-control-software.html) software
 
 Based on and includes code from [hap-nodejs](https://github.com/KhaosT/HAP-NodeJS) and [homebridge-legacy-plugins](https://github.com/nfarina/homebridge-legacy-plugins) and [homebridge-homeseer-plugin](https://github.com/jrhubott/homebridge-homeseer).
