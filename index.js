@@ -234,7 +234,6 @@ HomeSeerAccessory.prototype = {
 		var url;
 		var callbackValue = 1;
 		var transmitValue = level;
-		var noUpdate = false; // set to true if something determines that there should be no HomeSeer update.
 
 		
 		// For Debugging
@@ -246,16 +245,12 @@ HomeSeerAccessory.prototype = {
 			console.log ("*** PROGRAMMING ERROR **** - setHSValue called by something without a UUID");
 			console.log (this);                
 			callback(error);
-			
 		}
 
 			// Add Any Special Handling Based on the UUID
 			// Uncomment any UUID's actually used!
 				switch( this.UUID)
 				{
-					// The following characteristics all are stored as percentages in HomeKit, but 1-99 in HomeSeer
-					// So scale these values.
-
 					case(Characteristic.Brightness.UUID ): 
 					{
 						transmitValue = (transmitValue == 100) ? 99 : level;
@@ -263,13 +258,12 @@ HomeSeerAccessory.prototype = {
 						setHSValue(this.HSRef, transmitValue); 
 						callbackValue = level; // but call back with the value instructed by HomeKit rather than the modified 99 sent to HomeSeer
 						
-						this.updateValue(transmitValue); // Assume success. This gets corrected on next poll if assumption is wrong.
+						// this.updateValue(transmitValue); // Assume success. This gets corrected on next poll if assumption is wrong.
 						// console.log ("          ** Debug ** called for Brightness update with level %s then set to transmitValue %s", level, transmitValue); 
 
 						break;
 					}
 					
-
 					case(Characteristic.LockTargetState.UUID ):
 					{
 						switch(level)
@@ -277,7 +271,7 @@ HomeSeerAccessory.prototype = {
 							case 0: {transmitValue =  0;   callbackValue = 0;  break;}
 							case 1: {transmitValue =  255; callbackValue = 1;  break; }
 						}
-						setHSValue(this.HSRef, transmitValue);
+						// setHSValue(this.HSRef, transmitValue); ** Don't assume success for the lock. Wait for a poll!
 						console.log("Set TransmitValue for lock characteristic %s to %s ", this.displayName, transmitValue);
 						break;
 					}
@@ -572,19 +566,9 @@ HomeSeerAccessory.prototype = {
 					.HSRef = this.config.ref;
 					
                 lockService
-                    .getCharacteristic(Characteristic.LockCurrentState)					
-                    .on('get', getHSValue.bind(lockService.getCharacteristic(Characteristic.LockCurrentState)));
-				
-
-               /*  lockService
                     .getCharacteristic(Characteristic.LockTargetState)
-                    .on('get', getHSValue.bind(lockService.getCharacteristic(Characteristic.LockCurrentState)));
-		*/
-				// Target needs to be updated to match current state after a HomeSeer change.
-				/* lockService
-                    .getCharacteristic(Characteristic.LockTargetState)
-					.HSRef = this.config.ref; */
-					
+						.HSRef = this.config.ref;
+						
                 lockService
                     .getCharacteristic(Characteristic.LockTargetState)
 					.on('set', this.setHSValue.bind(lockService.getCharacteristic(Characteristic.LockTargetState)));
@@ -600,39 +584,12 @@ HomeSeerAccessory.prototype = {
 				services.push(lockService);
 				
 		    	_statusObjects.push(lockService.getCharacteristic(Characteristic.LockCurrentState));
-			//  _statusObjects.push(lockService.getCharacteristic(Characteristic.LockTargetState));
+				_statusObjects.push(lockService.getCharacteristic(Characteristic.LockTargetState));
 								
                 break;
             }
 			
 			
-			/*
-            case "SecuritySystem": {
-
-                //Better default
-                if (this.config.statusUpdateCount == null)
-                    this.config.statusUpdateCount = 75;
-
-                var securitySystemService = new Service.SecuritySystem();
-				securitySystemService.isPrimaryService = true;
-				
-                securitySystemService
-                    .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-                    .on('get', this.getSecuritySystemCurrentState.bind(this));
-                securitySystemService
-                    .getCharacteristic(Characteristic.SecuritySystemTargetState)
-                    .on('get', this.getSecuritySystemCurrentState.bind(this));
-                securitySystemService
-                    .getCharacteristic(Characteristic.SecuritySystemTargetState)
-                    .on('set', this.setSecuritySystemTargetState.bind(this));
-                services.push(securitySystemService);
-
-                this.statusCharacteristic = securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState);
-
-                break;
-            }
-			*/
-
             case "Lightbulb": 
 			default: {
 				this.log("** Debug ** - Setting up bulb %s with can_dim %s", this.config.name, this.config.can_dim);
@@ -816,16 +773,24 @@ function updateCharacteristicFromHSData(characteristicObject)
 			case(characteristicObject.UUID == Characteristic.LockCurrentState.UUID):
 			{
 				// Set to 0 = UnSecured, 1 - Secured, 2 = Jammed.
-				console.log("** Debug ** - Attempting LockCurrentState update with value %s", newValue);
+				// console.log("** Debug ** - Attempting LockCurrentState update with received HS value %s", newValue);
 				
 				switch(newValue)
 				{
-					case(0):	{	characteristicObject.updateValue(0);	break;	}
-					case(255):	{	characteristicObject.updateValue(1);	break;	}
-					default:	{	characteristicObject.updateValue(2);	break;	}
+					case(0):	{	characteristicObject.updateValue(0);	break;	} // Locked
+					case(255):	{	characteristicObject.updateValue(1);	break;	} // unlocked
+					default:	{	characteristicObject.updateValue(2);	break;	} // unknown
 				}
-				console.log("** Debug ** - Finished LockCurrentState update");
-
+				break;
+			}
+			case (characteristicObject.UUID == Characteristic.LockTargetState.UUID):
+			{
+				switch(newValue)
+				{
+					case(0):	{	characteristicObject.updateValue(0);	break;	} // Locked
+					case(255):	{	characteristicObject.updateValue(1);	break;	} // unlocked
+					default:	{ 	console.log("ERROR - Unexpected Lock Target State Value %s", newValue); break;}
+				}
 				break;
 			}
 			/*
@@ -871,6 +836,7 @@ function updateCharacteristicFromHSData(characteristicObject)
 				characteristicObject.updateValue(newValue);
 				break;
 			}
+
 
 			default:
 			{
