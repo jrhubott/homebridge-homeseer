@@ -18,7 +18,6 @@ This Plugin removes support for the following device types (Sorry, but I don't h
 
 * Battery (now added as a service to the other devices; no longer a separate device)
 * Door (but you can still configure a Lock)
-* Fan  (may be added back in future.)
 * Garage Door Opener
 * HumiditySensor
 * LightSensor
@@ -30,6 +29,7 @@ This Plugin removes support for the following device types (Sorry, but I don't h
 Note that "onValues", "offValues", "LockSecuredValues", "LockUnsecuredValues", and "LockJammedValues" config.json settings are not implemented. Instead this plugin uses the standared Z-Wave values for these settings.  If a specific use case exist for implementing these settings (or if the plugin doesn't work without them for your Z-Wave device), please indicate that as an issue and support may be implemented in a future revision.
 
 ## Future Work
+* Check if HomeSeer is running and can be accessed. Warn user and stop if not running (or loop until HomeSeer becomes available)
 * Add in additional data checking to ensure config.json settings match device type information retrieved from HomeSeer.
 * Get device name from HomeSeer rather than manual input via config.json.
 * Get device type from HomeSeer rather than manual input via config.json.
