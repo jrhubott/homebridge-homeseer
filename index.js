@@ -13,20 +13,16 @@
 
 
 
-var request = require("request");
+var request = require("request"); // Mostly replaced by "promises" based HTTP.
 
 var promiseHTTP = require("request-promise-native");
 
-
-var http = require('http');
 var Accessory, Service, Characteristic, UUIDGen;
-
-var pollingOffsetCounter=0;
 
 var _allAccessories = [];
 var _globalHSRefs = [];
 	_globalHSRefs.pushUnique = function(item) { if (this.indexOf(item) == -1) this.push(item); }
-var _priorHSDeviceStatus = [];
+	
 var _currentHSDeviceStatus = [];
 var _allStatusUrl = [];
 var _HSValues = [];
@@ -98,29 +94,32 @@ function HomeSeerPlatform(log, config, api) {
 HomeSeerPlatform.prototype = {
 	
     accessories: function (callback) {
-            var foundAccessories = [];
-				
-			var that = this;
-
+        var foundAccessories = [];
+		var that = this;
+        var refList = [];
+		
+		// Make devices for each HomeSeer event in the config.json file
         if (this.config.events) {
-            this.log("Creating HomeSeer events.");
+            this.log("Creating HomeSeer events. Caution currently untested.");
             for (var i = 0; i < this.config.events.length; i++) {
                 var event = new HomeSeerEvent(that.log, that.config, that.config.events[i]);
                 foundAccessories.push(event);
             }
         }
 
+		// Then make a device for each "regular" HomeSeer device.
         this.log("Fetching HomeSeer devices.");
-        var refList = "";
+
         for (var i = 0; i < this.config.accessories.length; i++) {
-            refList = refList + this.config.accessories[i].ref;
+
+			refList.push(this.config.accessories[i].ref);
 			
-			//Gather all HS References For New Polling Method to poll all devices at once	
+			//Gather all HS References For polling. Refernces in _globalHSRefs can include references that do not
+			// create a new HomeKit device such as batteries
 			_globalHSRefs.pushUnique(this.config.accessories[i].ref);
+			
 			if(this.config.accessories[i].batteryRef) _globalHSRefs.pushUnique(this.config.accessories[i].batteryRef);
-		
-            if (i < this.config.accessories.length - 1)
-                refList = refList + ",";
+
         }
 		
 		//For New Polling Method to poll all devices at once
@@ -129,7 +128,7 @@ HomeSeerPlatform.prototype = {
 		
 		this.log("Global Status URL is " + _allStatusUrl);
 		
-        var url = this.config["host"] + "/JSON?request=getstatus&ref=" + refList;
+        var url = this.config["host"] + "/JSON?request=getstatus&ref=" + refList.concat();
         httpRequest(url, "GET", function (error, response, body) {
             if (error) {
                 this.log('HomeSeer status function failed: %s', error.message);
@@ -152,8 +151,7 @@ HomeSeerPlatform.prototype = {
 		    
 // This is the new Polling Mechanism to poll all at once.	
 
-			updateEmitter = setInterval(
-				function () 
+			updateEmitter = setInterval( function () 
 					{
 					// Now do the poll
 						promiseHTTP(_allStatusUrl)
@@ -177,7 +175,7 @@ HomeSeerPlatform.prototype = {
 								);//end catch
 
 					}, this.config.platformPoll * 1000 
-					);	//end polling loop
+					);	//end setInterval function for polling loop
 			
 			callback(foundAccessories);
             }
@@ -687,10 +685,7 @@ HomeSeerEvent.prototype = {
 					callback(err);
 				}.bind(this)
 			);
-			
-        }.bind(this));
     },
-
 
     getServices: function () {
         var services = []
