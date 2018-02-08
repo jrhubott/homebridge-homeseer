@@ -31,14 +31,23 @@
 //         "accessories":[                      // Required - List of Accessories
 //            {
 //              "ref":8,                        // Required - HomeSeer Device Reference (To get it, select the HS Device - then Advanced Tab) 
-//              "type":"Lightbulb",             // Optional - Lightbulb is the default
+//              "type":"Lightbulb",             // Required - Lightbulb (currently not enforced, but may be in future)
 //              "name":"My Light",              // Optional - HomeSeer device name is the default
 //              "can_dim":true,                 // Optional - true is the default - false for a non dimmable lightbulb
-//              "uuid_base":"SomeUniqueId2"     // Optional - HomeKit identifier will be derived from this parameter instead of the name. You SHOULD add this parameter to all accessories !
+//              "uuid_base":"SomeUniqueId"     // Optional - HomeKit identifier will be derived from this parameter instead of the name. You SHOULD add this parameter to all accessories !
+//            },
+//            {
+//              "ref":8,                        // Required - HomeSeer Device Reference (To get it, select the HS Device - then Advanced Tab) 
+//              "type":"Fan",             		// Required for a Fan
+//              "name":"My Fan",              	// Optional - HomeSeer device name is the default
+//              "can_dim":true,                 // Optional - true is the default - false for fixed speed fan.
+//              "uuid_base":"SomeUniqueId"     // Optional - HomeKit identifier will be derived from this parameter instead of the name. You SHOULD add this parameter to all accessories !
 //            },
 //            {
 //              "ref":58,                       // This is a controllable outlet
 //              "type":"Outlet"
+//              "uuid_base":"SomeUniqueId"     // Optional - HomeKit identifier will be derived from this parameter instead of the name. You SHOULD add this parameter to all accessories !
+
 //            },
 //            {
 //              "ref":111,                      // Required - HomeSeer Device Reference for your sensor
@@ -47,12 +56,14 @@
 //              "name":"Bedroom temp",          // Optional - HomeSeer device name is the default
 //              "batteryRef":112,               // Optional - HomeSeer device reference for the sensor battery level
 //              "batteryThreshold":15           // Optional - If sensor battery level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 10
+//              "uuid_base":"SomeUniqueId"     // Optional - HomeKit identifier will be derived from this parameter instead of the name. You SHOULD add this parameter to all accessories !
 //            },
 //            {
 //              "ref":34,                       // Required - HomeSeer Device Reference for your sensor
 //              "type":"SmokeSensor",           // Required for a smoke sensor
 //              "name":"Kichen smoke detector", // Optional - HomeSeer device name is the default
 //              "batteryRef":35,                // Optional - HomeSeer device reference for the sensor battery level
+//              "uuid_base":"SomeUniqueId"     // Optional - HomeKit identifier will be derived from this parameter instead of the name. You SHOULD add this parameter to all accessories !
 //              "batteryThreshold":15,          // Optional - If sensor battery level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 10
 //            },
 //            {
@@ -61,11 +72,13 @@
 //              "name":"Kichen CO detector",    // Optional - HomeSeer device name is the default
 //              "batteryRef":35,                // Optional - HomeSeer device reference for the sensor battery level
 //              "batteryThreshold":15,          // Optional - If sensor battery level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 10
+//              "uuid_base":"SomeUniqueId"     // Optional - HomeKit identifier will be derived from this parameter instead of the name. You SHOULD add this parameter to all accessories !
 //            },
 //            {
 //              "ref":210,                      // Required - HomeSeer Device Reference of a Lock
 //              "type":"Lock",                  // Required for a Lock
 //              "batteryRef":35,                // Optional - HomeSeer device reference for the sensor battery level
+//              "uuid_base":"SomeUniqueId"     // Optional - HomeKit identifier will be derived from this parameter instead of the name. You SHOULD add this parameter to all accessories !
 //              "batteryThreshold":15,          // Optional - If sensor battery level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 10
 //            },
 //            {
@@ -73,6 +86,7 @@
 //              "type":"Battery",               // Required for a Battery
 //              "name":"Roomba battery",        // Optional - HomeSeer device name is the default
 //              "batteryThreshold":15           // Optional - If the level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 10
+//              "uuid_base":"SomeUniqueId"     // Optional - HomeKit identifier will be derived from this parameter instead of the name. You SHOULD add this parameter to all accessories !
 //            },
 //         ]
 //     }
@@ -81,6 +95,7 @@
 //
 // SUPORTED TYPES:
 // - Lightbulb              (can_dim  options)
+// - Fan              		(can_dim  options, here "can_dim" =' true is for a fan with rotation speed control)
 // - Switch                 
 // - Outlet                 
 // - TemperatureSensor      (temperatureUnit=C|F)
@@ -183,7 +198,7 @@ HomeSeerPlatform.prototype = {
 
 			refList.push(this.config.accessories[i].ref);
 			
-			//Gather all HS References For polling. Refernces in _globalHSRefs can include references that do not
+			//Gather all HS References For polling. References in _globalHSRefs can include references that do not
 			// create a new HomeKit device such as batteries
 			_globalHSRefs.pushUnique(this.config.accessories[i].ref);
 			
@@ -274,6 +289,9 @@ function HomeSeerAccessory(log, platformConfig, accessoryConfig, status) {
 
     if (this.config.uuid_base)
         this.uuid_base = this.config.uuid_base;
+	
+	if(this.config.can_dim)
+			this.can_dim = this.config.can_dim;
 
     var that = this; // May be unused?
 
@@ -408,7 +426,12 @@ HomeSeerAccessory.prototype = {
 
     getServices: function () {
 		// this.log("---------------getServices function called --------- Debug ----------------------------");
+		// this.log("Configuration ", this.config);
+		// this.log("---------------getServices function called --------- Debug ----------------------------");
+				
         var services = []
+		
+
 
         switch (this.config.type) {
 			
@@ -609,7 +632,8 @@ HomeSeerAccessory.prototype = {
                     .getCharacteristic(Characteristic.LockTargetState)
 					.on('set', this.setHSValue.bind(lockService.getCharacteristic(Characteristic.LockTargetState)));
                     // .on('set', this.setLockTargetState.bind(this));
-					
+				
+				// Next two values are not currently used.
 				if (this.config.unlockValue)
 					 lockService.getCharacteristic(Characteristic.LockTargetState).HSunlockValue = this.config.unlockValue;
 				if (this.config.lockValue)
@@ -634,21 +658,23 @@ HomeSeerAccessory.prototype = {
 					.HSRef = this.config.ref;				
                 fanService
                     .getCharacteristic(Characteristic.On)
-                    .on('set', this.setHSValue.bind(lightbulbService.getCharacteristic(Characteristic.On)));
+                    .on('set', this.setHSValue.bind(fanService.getCharacteristic(Characteristic.On)));
 					
 				_statusObjects.push(fanService.getCharacteristic(Characteristic.On));					
 
-                if (this.config.can_dim) {
+                if (this.config.can_dim == true) {
+					this.log("          Adding RotationSpeed to Fan");
                     fanService
                         .addCharacteristic(new Characteristic.RotationSpeed())
 						.HSRef = this.config.ref;
 						
 					fanService
 						.getCharacteristic(Characteristic.RotationSpeed)
-						.on('set', this.setHSValue.bind(lightbulbService.getCharacteristic(Characteristic.On)));
+						.on('set', this.setHSValue.bind(fanService.getCharacteristic(Characteristic.RotationSpeed)));
 				_statusObjects.push(fanService.getCharacteristic(Characteristic.RotationSpeed));						
                 }
 
+				
                 services.push(fanService);
                 break;
             }			
@@ -673,7 +699,7 @@ HomeSeerAccessory.prototype = {
 				_statusObjects.push(lightbulbService.getCharacteristic(Characteristic.On));
 		    
                 if (this.config.can_dim == null || this.config.can_dim == true) {
-					// this.log("       ** Debug ** Adding a Brightness service");
+					this.log("          Making lightbulb dimmable");
 					
                     lightbulbService
                         .addCharacteristic(new Characteristic.Brightness())
@@ -699,7 +725,7 @@ HomeSeerAccessory.prototype = {
 		
 		 // If batteryRef has been defined, then add a battery service.
                 if (this.config.batteryRef) {
-                    this.log("Adding a Battery Service to " + this.name);
+                    this.log("          Adding a Battery Service");
 
                     var batteryService = new Service.BatteryService();
 					batteryService.displayName = "Service.BatteryService";
@@ -811,7 +837,7 @@ function updateCharacteristicFromHSData(characteristicObject)
 	
 	// This performs the update to the HomeKit value from data received from HomeSeer
 	//Debug
-	// console.log("** Debug ** - Updating Characteristic %s with name %s", characteristicObject.UUID, characteristicObject.displayName)
+	// console.log("** Debug ** - Updating Characteristic %s with name %s and current value %s", characteristicObject.UUID, characteristicObject.displayName, characteristicObject.value)
 
 	if (characteristicObject.HSRef)
 	{
@@ -866,7 +892,7 @@ function updateCharacteristicFromHSData(characteristicObject)
 				characteristicObject.updateValue(newValue);
 				break;
 			}
-			case (characteristicObject.UUID == Characteristic.RotationSpeed):
+			case (characteristicObject.UUID == Characteristic.RotationSpeed.UUID):
 			case (characteristicObject.UUID == Characteristic.Brightness.UUID):
 			{
 					// Zwave uses 99 as its maximum. Make it appear as 100% in Homekit
