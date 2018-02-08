@@ -1,25 +1,39 @@
-[![npm version](https://badge.fury.io/js/homebridge-homeseer-plugin-2018.svg)](https://badge.fury.io/js/homebridge-homeseer-plugin-2018)
+[![npm version](https://badge.fury.io/js/homebridge-homeseer--2018.svg)](https://badge.fury.io/js/homebridge-homeseer-plugin-2018)
 
-# homebridge-homeseer-plugin
+# homebridge-homeseer-2018
 
+This plugin is still undergoing testing! See notes below regarding un-implemented features!
 
-Plugin for the [homebridge](https://github.com/nfarina/homebridge) Apple iOS Homekit support application to support integration with the [Homeseer V3](http://www.homeseer.com/home-control-software.html) software
+Note: This package is based on version 1.0.17 of the jrhubott/homebridge-homeseer plugin. 
+
+This version uses a new polling mechanism in which all HomeSeer devices are polled in a single HTTP call rather than individual HTTP calls. This reduces the polling stress on HomeSeer and allows for much more frequent polling. E.g., in testing, a 100 Z-Wave node system shows minimal load even with poll times as low as 5 seconds. Only the sysem polling time setting is used, individual polling settings are no longer needed. 
+
+This plugin also changes the way in which device characteristics are updated. In particular, the brightness characteristic of dimmable lights is now updated on the Apple Home application in "real time" (well, on each poll), so you no longer need to refresh the screen in the Home application to see brighness changes that occur due to manual interactions with the Z-Wave switch or via HomeSeer.
+
+This Plugin removes support for the following device types (Sorry, but I don't have these device types so I can't test them. Therefore, they have been removed):
+  Battery (now added as a service to the other devices; no longer a separate device)
+  Door (but you can still configure a Lock)
+  Garage Door Opener
+  Security System
+  Thermostats (but thermometers can still be configured!)
+  Window Coverings
+  
+Note that "onValues", "offValues", "LockSecuredValues", "LockUnsecuredValues", and "LockJammedValues" config.json settings are not implemented. Instead this plugin uses the standared Z-Wave values for these settings.  If a specific use case exist for implementing these settings (or if the plugin doesn't work without them for your Z-Wave device), please indicate that as an issue and support may be implemented in a future revision..
+
+This plugin is for use with [homebridge](https://github.com/nfarina/homebridge) Apple iOS Homekit support application to support integration with the [Homeseer V3](http://www.homeseer.com/home-control-software.html) software
 
 Based on and includes code from [hap-nodejs](https://github.com/KhaosT/HAP-NodeJS) and [homebridge-legacy-plugins](https://github.com/nfarina/homebridge-legacy-plugins) and [homebridge-homeseer-plugin](https://github.com/jrhubott/homebridge-homeseer).
-
-Note: This package is a update to the 1.0.17 version of the jrhubott/homebridge-homeseer plugin. This update adds additional battery level indication information for locks and sensor devices and provides for both a % of battery and low battery status information display on the Home Application. Updates have been posted as a Pull Request to jrhubott/homebridge-homeseer. In the event these changes are accepted into the original jrhubott package, this repository will be removed or an out-of-date status indicated.
-
 
 # Installation
 Linux (Ubuntu/Debian based)
 
 1. `sudo npm install homebridge -g`
-2. `sudo npm install -g homebridge-homeseer-plugin-2018`
+2. `sudo npm install -g homebridge-homeseer--2018`
 
 Windows
 
 1. Follow [these](http://board.homeseer.com/showpost.php?p=1204012&postcount=250) instructions for homebridge Installation
-2. Run `npm install homebridge-homeseer-plugin` from the homebridge-homeseer directory
+2. Run `npm install homebridge-homeseer-2018` from the homebridge-homeseer directory
 
 # Usage
 ## Platform options
@@ -28,7 +42,7 @@ Windows
 "platform": "HomeSeer",             // Required
 "name": "HomeSeer",                 // Required
 "host": "http://yourserver",        // Required - If you did setup HomeSeer authentication, use "http://user:password@ip_address:port"
-"poll" : 60                         // Optional - Default polling rate in seconds to check for changed device status
+"poll" : 10                         // Optional - Default polling rate in seconds to check for changed device status
 ```
 
 ## All Accessories options
