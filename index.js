@@ -37,9 +37,6 @@
 //              "uuid_base":"SomeUniqueId2"     // Optional - HomeKit identifier will be derived from this parameter instead of the name. You SHOULD add this parameter to all accessories !
 //            },
 //            {
-//              "ref":9                         // This is a dimmable Lightbulb by default. Recommeded that you explicitly define the type rather than rely on this default
-//            },
-//            {
 //              "ref":58,                       // This is a controllable outlet
 //              "type":"Outlet"
 //            },
