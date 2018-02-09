@@ -684,8 +684,45 @@ HomeSeerAccessory.prototype = {
 				
                 services.push(fanService);
                 break;
-            }			
-			
+            }	
+/*			case ("RGBLight"):
+			{
+				// this.log("** Debug ** - Setting up bulb %s with can_dim %s", this.config.name, this.config.can_dim);
+                var lightbulbService = new Service.Lightbulb();
+				lightbulbService.isPrimaryService = true;
+				lightbulbService.displayName = "Service.Lightbulb"
+				
+				lightbulbService
+					.getCharacteristic(Characteristic.On)
+					.RGB = this.config.RGB;
+				
+                lightbulbService
+                    .getCharacteristic(Characteristic.On)
+                    .on('set', this.setHSValue.bind(lightbulbService.getCharacteristic(Characteristic.On)));
+
+					
+				lightbulbService
+                        .addCharacteristic(new Characteristic.Brightness())
+						.HSRef = this.config.ref;
+					
+				lightbulbService
+						.addCharacteristic(new Characteristic.Hue);
+						
+					
+				lightbulbService
+						.addCharacteristic(new Characteristic.Saturation);
+
+						
+					lightbulbService
+						.getCharacteristic(Characteristic.Brightness)
+                        .on('set', this.setHSValue.bind(lightbulbService.getCharacteristic(Characteristic.Brightness)));
+                        // .on('get', this.getValue.bind(this));
+					
+				_statusObjects.push(lightbulbService.getCharacteristic(Characteristic.On));
+				
+				break;
+			}
+	*/		
 			
             case "Lightbulb": 
 			default: {
@@ -714,12 +751,7 @@ HomeSeerAccessory.prototype = {
 					
 					lightbulbService
 						.getCharacteristic(Characteristic.Brightness)
-						.access_url = this.access_url;
-						
-					lightbulbService
-						.getCharacteristic(Characteristic.Brightness)
                         .on('set', this.setHSValue.bind(lightbulbService.getCharacteristic(Characteristic.Brightness)));
-                        // .on('get', this.getValue.bind(this));
 						
 					_statusObjects.push(lightbulbService.getCharacteristic(Characteristic.Brightness));
                 }
