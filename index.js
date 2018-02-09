@@ -161,122 +161,158 @@ function HomeSeerPlatform(log, config, api) {
     this.config = config;
 
     if(config)
-		if (this.config["poll"]==null)
-		{
-        this.config["poll"] = 10;
-		this.config["platformPoll"] = 10;
-		}
-		else
-		{
-			this.config.platformPoll = this.config.poll;
-		}
+	{
+		if (this.config["platformPoll"]==null)  this.config["platformPoll"] = 10;
 
-    if(config)
         this.log("System default periodic polling rate set to " + this.config.platformPoll + ' seconds');
+	}
 }
 
 HomeSeerPlatform.prototype = {
 	
-    accessories: function (callback) {
+    accessories: function (callback) 
+	{
         var foundAccessories = [];
 		var that = this;
         var refList = [];
 		
+		/////////////////////////////////////////////////////////////////////////////////		
 		// Make devices for each HomeSeer event in the config.json file
-        if (this.config.events) {
-            this.log("Creating HomeSeer events. Caution currently untested.");
-            for (var i = 0; i < this.config.events.length; i++) {
-                var event = new HomeSeerEvent(that.log, that.config, that.config.events[i]);
-                foundAccessories.push(event);
-            }
-        }
+		try
+		{
+			if (this.config.events) {
+				this.log("Creating HomeSeer events. Caution currently untested.");
+				for (var i = 0; i < this.config.events.length; i++) {
+					var event = new HomeSeerEvent(that.log, that.config, that.config.events[i]);
+					foundAccessories.push(event);
+				}
+			}
+		}
+		catch(err)
+		{
+			this.log("--------------------------------------------------------------------------------");
+			this.log("** ERROR ** ERROR ** ERROR ** Etc. **");
+			this.log("** ERROR attempting to add HomeSeer event specified in config.json to HomeKit **")
+			this.log("Processing will continue with adding of Accessories");
+			this.log("--------------------------------------------------------------------------------");
+		}
+		
+		/////////////////////////////////////////////////////////////////////////////////
 
-		// Then make a device for each "regular" HomeSeer device.
+		// Then make a HomeKit device for each "regular" HomeSeer device.
         this.log("Fetching HomeSeer devices.");
+		
+		try
+		{
+			// better yet would be to have this repeat and wait until it is fulfilled 
+			promiseHTTP(this.config["host"] + "/JSON?request=getstatus")
+			.then( function(body) 
+				{
+					this.log("Successfully accessed HomeSeer and obtained data: ");
 
-        for (var i = 0; i < this.config.accessories.length; i++) {
+				}.bind(this) // need to bind to "this" for logging to work.
+			)				
+			.catch(function(err) 
+				{ 
+					this.log("--------------------    ERROR    --------------------------");				
+					this.log("Unable to Access HomeSeer at address %s", this.config["host"]);
+					this.log("HTTP Error Message: %s", err);
+					this.log("Check if HomeSeer is running. Re-attempting access in 30 seconds");
+					this.log("--------------------------------------------------------------------");
+				}.bind(this) // need to bind to "this" for logging to work.
+			)
 
-			refList.push(this.config.accessories[i].ref);
-			
-			//Gather all HS References For polling. References in _globalHSRefs can include references that do not
-			// create a new HomeKit device such as batteries
-			_globalHSRefs.pushUnique(this.config.accessories[i].ref);
-			
-			if(this.config.accessories[i].batteryRef) _globalHSRefs.pushUnique(this.config.accessories[i].batteryRef);
-
-        }
-		
-		//For New Polling Method to poll all devices at once
-		_globalHSRefs.sort();
-		_allStatusUrl = this.config["host"] + "/JSON?request=getstatus&ref=" + _globalHSRefs.concat();
-		
-		this.log("Retrieve All HomeSeer Device Status URL is " + _allStatusUrl);
-		
-        var url = this.config["host"] + "/JSON?request=getstatus&ref=" + refList.concat();
-		
-	// ********************************	
-	// Add a check that the HomeSeer web server is available. Maybe via a promise which contains a SetInterval loop
-	// To ping the server until you get a response and then continue to do remaining processing.
-	///
-	/*
-			waitForHomeseer = new Promise(function(resolve, reject) { add a loop to check that HomeSeer is available }); 
 	
-	*/
-		
-		promiseHTTP(url).then( function(body) {
-                this.log('HomeSeer status function succeeded!');
-                var response = JSON.parse(body);
-                for (var i = 0; i < this.config.accessories.length; i++) {
-                    for (var j = 0; j < response.Devices.length; j++) {
-						// Set up initial array of HS Response Values during startup
-						_HSValues[response.Devices[j].ref] = response.Devices[j].value;
-                        if (this.config.accessories[i].ref == response.Devices[j].ref) {
-                            var accessory = new HomeSeerAccessory(that.log, that.config, this.config.accessories[i], response.Devices[j]);
-                            foundAccessories.push(accessory);
-                            break;
-                        } //endfor
-                    }
-                } //end else.
-		    
-// This is the new Polling Mechanism to poll all at once.	
+			///////////////////////
 
-			updateEmitter = setInterval( function () 
-					{
-					// Now do the poll
-						promiseHTTP(_allStatusUrl)
-							.then( function(htmlString) 
-									{
-										_currentHSDeviceStatus = JSON.parse(htmlString).Devices;
-										that.log("Polled HomeSeer: Retrieved values for %s HomeSeer devices.",  _currentHSDeviceStatus.length);
-										for (var index in _currentHSDeviceStatus)
-										{
-											_HSValues[_currentHSDeviceStatus[index].ref] = _currentHSDeviceStatus[index].value;
-										} //endfor
+			for (var i = 0; i < this.config.accessories.length; i++) {
 
-										updateAllFromHSData();
-									
-									}
-								) // end then
-								.catch(function(err)
-									{
-										that.log("HomeSeer poll attempt failed with error %s", err);
-									}
-								);//end catch
-
-					}, this.config.platformPoll * 1000 
-					);	//end setInterval function for polling loop
+				refList.push(this.config.accessories[i].ref);
+				
+				//Gather all HS References For polling. References in _globalHSRefs can include references that do not
+				// create a new HomeKit device such as batteries
+				_globalHSRefs.pushUnique(this.config.accessories[i].ref);
+				
+				if(this.config.accessories[i].batteryRef) _globalHSRefs.pushUnique(this.config.accessories[i].batteryRef);
+			} // end for
 			
-			callback(foundAccessories);
+			//For New Polling Method to poll all devices at once
+			_globalHSRefs.sort();
+			_allStatusUrl = this.config["host"] + "/JSON?request=getstatus&ref=" + _globalHSRefs.concat();
+			
+			this.log("Retrieve All HomeSeer Device Status URL is " + _allStatusUrl);
+			
+			var url = this.config["host"] + "/JSON?request=getstatus&ref=" + refList.concat();
+		
+			// ********************************	
+			// Add a check that the HomeSeer web server is available. Maybe via a promise which contains a SetInterval loop
+			// To ping the server until you get a response and then continue to do remaining processing.
+			///
+			/*
+					waitForHomeseer = new Promise(function(resolve, reject) { add a loop to check that HomeSeer is available }); 
+			
+			*/
+		
+			promiseHTTP({ uri: url, json:true}).then( function(response) 
+				{
+					this.log('HomeSeer status function succeeded!');
+					for (var i = 0; i < this.config.accessories.length; i++) {
+						for (var j = 0; j < response.Devices.length; j++) {
+							// Set up initial array of HS Response Values during startup
+							_HSValues[response.Devices[j].ref] = response.Devices[j].value;
+							if (this.config.accessories[i].ref == response.Devices[j].ref) {
+								var accessory = new HomeSeerAccessory(that.log, that.config, this.config.accessories[i], response.Devices[j]);
+								foundAccessories.push(accessory);
+								break;
+							} //endfor
+						}
+					} //end else.
+				
+				// This is the new Polling Mechanism to poll all at once.	
+
+				updateEmitter = setInterval( function () 
+				{
+					// Now do the poll
+					promiseHTTP({ uri: _allStatusUrl, json:true})
+						.then( function(json) 
+							{
+								_currentHSDeviceStatus = json.Devices;
+								that.log("Polled HomeSeer: Retrieved values for %s HomeSeer devices.",  _currentHSDeviceStatus.length);
+								for (var index in _currentHSDeviceStatus)
+								{
+									_HSValues[_currentHSDeviceStatus[index].ref] = _currentHSDeviceStatus[index].value;
+								} //endfor
+
+									updateAllFromHSData();
+									
+							} // end then's function
+							) // end then
+						.catch(function(err)
+							{
+								that.log("HomeSeer poll attempt failed with error %s", err);
+							} // end catch's fuction
+							);//end catch
+
+				}, this.config.platformPoll * 1000 // end SetInterval's function
+				);	//end setInterval function for polling loop
+			
+				callback(foundAccessories);
             
-        }.bind(this))
-		.catch (function(err) 
-			{ 
-			this.log('HomeSeer status function failed: %s', error.message); 
-			callback(foundAccessories)
-			});
-
-
-    }
+			}.bind(this)) // bind the promise's function body to "this", else ??
+			.catch (function(err) 
+				{ 
+					this.log('HomeSeer status function failed: %s', error.message); 
+					callback(foundAccessories)
+				});
+				
+		} //end the try!
+		catch(err)
+		{
+			this.log("Error in trying to add a HomeSeer device");
+			callback(foundAccessories);
+			// throw(err);
+		}
+	}
 }
 
 function HomeSeerAccessory(log, platformConfig, accessoryConfig, status) {
