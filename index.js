@@ -243,35 +243,23 @@ HomeSeerPlatform.prototype = {
 			updateEmitter = setInterval( function () 
 					{
 					// Now do the poll
-					that.log("** DEBUG ** Polling with string %s", _allStatusUrl);
-					
 						promiseHTTP(_allStatusUrl)
 							.then( function(htmlString) 
 									{
 										_currentHSDeviceStatus = JSON.parse(htmlString).Devices;
 										that.log("Polled HomeSeer: Retrieved values for %s HomeSeer devices.",  _currentHSDeviceStatus.length);
-										//Debug
-										that.log("Received data" + _currentHSDeviceStatus );
 										for (var index in _currentHSDeviceStatus)
 										{
 											_HSValues[_currentHSDeviceStatus[index].ref] = _currentHSDeviceStatus[index].value;
 										} //endfor
-										that.log("Finished processing string of data");
-										
-										try { 
-											updateAllFromHSData();
-											} 
-										catch(err) 
-											{ 
-												that.log("Failed during processing of updateAllfromHSData with error %s", err); 
-												throw(err);
-											}
+
+										updateAllFromHSData();
 									
 									}
 								) // end then
 								.catch(function(err)
 									{
-										that.log("HomeSeer poll attempt finished with error %s", err);
+										that.log("HomeSeer poll attempt failed with error %s", err);
 									}
 								);//end catch
 
@@ -602,7 +590,10 @@ HomeSeerAccessory.prototype = {
 
                 break;
             }
-            case "LightSensor": {
+			
+			/*
+            case "LightSensor": 
+			{
                 var lightSensorService = new Service.LightSensor();
                 lightSensorService
                     .getCharacteristic(Characteristic.CurrentAmbientLightLevel)
@@ -610,12 +601,14 @@ HomeSeerAccessory.prototype = {
 
                 services.push(lightSensorService);
 				
-				_statusObjects.push(lightSensorService.getCharacteristic(Characteristic.AmbientLightLevel));	
+				_statusObjects.push(lightSensorService.getCharacteristic(Characteristic.CurrentAmbientLightLevel));	
 
                 break;
             }
+			*/
 
-            case "HumiditySensor": {
+            case "HumiditySensor": 
+			{
                 var humiditySensorService = new Service.HumiditySensor();
                 humiditySensorService
                     .getCharacteristic(Characteristic.CurrentRelativeHumidity)
@@ -886,70 +879,26 @@ HomeSeerEvent.prototype = {
     }
 }
 
-// Following function performs the update to the HomeKit value from data received from HomeSeer
-// The function "expects" to receive either a HomeKit Service object or a HomeKit Characteristic Object.
+
 function updateCharacteristicFromHSData(characteristicObject)
 {
-	// Debug
-	console.log(characteristicObject);
-try {	
+	
+	// This performs the update to the HomeKit value from data received from HomeSeer
+	//Debug
+	// console.log("** Debug ** - Updating Characteristic %s with name %s and current value %s", characteristicObject.UUID, characteristicObject.displayName, characteristicObject.value)
+
 	if (characteristicObject.HSRef)
 	{
 		var newValue = getHSValue(characteristicObject.HSRef);
-		
-		// This is a quick check to save some processing. 
-		// If the HomeKit object's value already matches what was received from HomeSeer, then do nothing more.
-		// if (characteristicObject.value == newValue) return;
-
-		//Uncomment following line for debugging!
-		console.log("** Debug ** - Updating UUID: %s, named: %s, from value: %s, to value: %s", characteristicObject.UUID, characteristicObject.displayName, characteristicObject.value, newValue)
-
 
 		switch(true)
 		{
-			// For the following characteristics, no special handling is needed.
-			// Simply provide HomeKit with whatever you got from HomeSeer
-			case(characteristicObject.UUID == Characteristic.AmbientLightLevel.UUID):
-			case(characteristicObject.UUID == Characteristic.CurrentRelativeHumidity.UUID):
-			case(characteristicObject.UUID == Characteristic.BatteryLevel.UUID):
-			{
-				characteristicObject.updateValue(newValue);
-				break;
-			}
-			// For the following characteristics, just do a simple binary conversion.
-			// For any non-Zero HomeSeer value, Simply provide HomeKit with a "true" value			
-			case( characteristicObject.UUID == Characteristic.CarbonDioxideDetected.UUID ):
-			case( characteristicObject.UUID == Characteristic.CarbonMonoxideDetected.UUID):
-			case( characteristicObject.UUID == Characteristic.ContactSensorState.UUID 	):
-			case( characteristicObject.UUID == Characteristic.MotionDetected.UUID 	):
-			case( characteristicObject.UUID == Characteristic.LeakDetected.UUID 		):
-			case( characteristicObject.UUID == Characteristic.OccupancyDetected.UUID 	):
-			case( characteristicObject.UUID == Characteristic.SmokeDetected.UUID 	):
-			case( characteristicObject.UUID == Characteristic.On.UUID):
-			{
-				characteristicObject.updateValue( ((newValue) ? true: false) );
-				break;
-			}	
-			// Handling Percentage values
-			// The following characteristics are all exprssed in percentages.
-			// Homekit uses 0 - 100 values. However, Z-Wave generally uses 0 - 99.
-			// Simply passing the Z-wave value to HomeKit would result in HomeKit never showing 100%
-			// even when device is fully on. So force a Z-Wave "99" to appear as 100%.
-			case (characteristicObject.UUID == Characteristic.RotationSpeed.UUID):
-			case (characteristicObject.UUID == Characteristic.Brightness.UUID):
-			{
-				characteristicObject.updateValue( (newValue == 99) ? 100 : newValue);
-				break;
-			}			
-			// For Battery Status, simply test the HomeSeer value against the threshold
 			case(characteristicObject.UUID == Characteristic.StatusLowBattery.UUID):
 			{
 				// that.log("Battery Threshold status of battery level %s with threshold %s", newValue, characteristicObject.batteryThreshold);
 				characteristicObject.updateValue((newValue < characteristicObject.batteryThreshold) ? true : false);
 				break;
 			}
-			// Lock Processing is slightly more complex. Z-Wave generally uses 0 for unlocked, 255 for locked.
-			// Convert to the corresponding HomeKit values of 0 for unlocked and 1 for locked.
 			case(characteristicObject.UUID == Characteristic.LockCurrentState.UUID):
 			{
 				// Set to 0 = UnSecured, 1 - Secured, 2 = Jammed.
@@ -973,9 +922,46 @@ try {
 				}
 				break;
 			}
-			// HomeKit uses celsius for all temperature values, so if HomeSeer is using Fahrenheit, convert it to Celsius.
+			
+			case( characteristicObject.UUID == Characteristic.CarbonDioxideDetected.UUID ):
+			case( characteristicObject.UUID == Characteristic.CarbonMonoxideDetected.UUID):
+			case( characteristicObject.UUID == Characteristic.ContactSensorState.UUID 	):
+			case( characteristicObject.UUID == Characteristic.MotionDetected.UUID 	):
+			case( characteristicObject.UUID == Characteristic.LeakDetected.UUID 		):
+			case( characteristicObject.UUID == Characteristic.OccupancyDetected.UUID 	):
+			case( characteristicObject.UUID == Characteristic.SmokeDetected.UUID 	):
+			case( characteristicObject.UUID == Characteristic.On.UUID):
+			{
+				characteristicObject.updateValue( ((newValue) ? true: false) );
+				break;
+			}
+			
+			
+			// For the following characteristics, no special handling is needed.
+			// Simply provide HomeKit with whatever you got from HomeSeer
+			// case(characteristicObject.UUID == Characteristic.CurrentAmbientLightLevel.UUID):
+			case(characteristicObject.UUID == Characteristic.CurrentRelativeHumidity.UUID):
+			case(characteristicObject.UUID == Characteristic.BatteryLevel.UUID):
+			{
+				characteristicObject.updateValue(newValue);
+				break;
+			}
+			
+			// Handling Percentage values
+			// The following characteristics are all exprssed in percentages.
+			// Homekit uses 0 - 100 values. However, Z-Wave generally uses 0 - 99.
+			// Simply passing the Z-wave value to HomeKit would result in HomeKit never showing 100%
+			// even when device is fully on. So force a Z-Wave "99" to appear as 100%.
+			case (characteristicObject.UUID == Characteristic.RotationSpeed.UUID):
+			case (characteristicObject.UUID == Characteristic.Brightness.UUID):
+			{
+					// Zwave uses 99 as its maximum. Make it appear as 100% in Homekit
+				characteristicObject.updateValue( (newValue == 99) ? 100 : newValue);
+				break;
+			}
 			case (characteristicObject.UUID == Characteristic.CurrentTemperature.UUID):
 			{
+				// HomeKit uses celsius, so if HS is using Fahrenheit, convert to Celsius.
 				if (characteristicObject.HStemperatureUnit && (characteristicObject.HStemperatureUnit == "F")) 
 					{ newValue = (newValue -32 )* (5/9);}
 								
@@ -994,47 +980,25 @@ try {
 		// console.log("** Debug ** -   %s value after update is: %s", characteristicObject.displayName, characteristicObject.value);
 	} // end if
 }
-catch(err)
-	{
-		console.log("** WARNING ** - updateCharacteristicFromHSData function failed with error %s", err);
-		throw(err);
-	}
-}
 
 
 function updateServicesFromHSData(service)
 {
 	 // Received an array of service objects and then Loop over each characteristic object in a service object 
 	 // and then send the characteristic object for updating
-	try
-	{
-	 for(var cIndex = 0; cIndex < service.characteristics.length; cIndex++)
+		for(var cIndex = 0; cIndex < service.characteristics.length; cIndex++)
 		{
 			updateCharacteristicFromHSData(service.characteristics[cIndex]);
-		}
-	}	
-	catch(err)
-	{
-		console.log("** WARNING ** - updateServicesFromHSData failed with error %s", err);
-		throw(err);
-	}		
+		}		
 }
 
 function updateAccssoryFromHSData(accessory)
 {
-	try
-	{
 		for(var sIndex = 0; sIndex < accessory.length; sIndex++)
 		{
 			// console.log ("Debug #%s", sIndex);
 		updateServicesFromHSData( accessory[sIndex] );
 		} // end for sIndex
-	}
-	catch(err)
-	{
-		console.log("** WARNING ** - updateAccssoryFromHSData failed with error %s", err);
-		throw(err);
-	}
 }
 
 function updateAllFromHSData()
