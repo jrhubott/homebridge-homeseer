@@ -19,7 +19,6 @@ This Plugin removes support for the following device types (Sorry, but I don't h
 * Battery (now added as a service to the other devices; no longer a separate device)
 * Door (but you can still configure a Lock)
 * Garage Door Opener
-* LightSensor
 * Security System
 * Thermostats (but Temperature Sensors can still be configured!)
 * Window Coverings
