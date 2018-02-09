@@ -1,8 +1,8 @@
 [![npm version](https://badge.fury.io/js/homebridge-homeseer-plugin-2018.svg)](https://badge.fury.io/js/homebridge-homeseer-plugin-2018)
 
-# homebridge-homeseer-2018
+# homebridge-homeseer-plugin-2018
 
-This plugin is still undergoing testing! See notes below regarding un-implemented features!
+This Version 2.0 plugin is still undergoing testing! See notes below regarding non-implemented features!
 
 Note: This package is based on version 1.0.17 of the jrhubott/homebridge-homeseer plugin. 
 
