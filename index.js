@@ -591,7 +591,7 @@ HomeSeerAccessory.prototype = {
                 break;
             }
 			
-			/*
+			
             case "LightSensor": 
 			{
                 var lightSensorService = new Service.LightSensor();
@@ -605,7 +605,7 @@ HomeSeerAccessory.prototype = {
 
                 break;
             }
-			*/
+			
 
             case "HumiditySensor": 
 			{
@@ -939,7 +939,7 @@ function updateCharacteristicFromHSData(characteristicObject)
 			
 			// For the following characteristics, no special handling is needed.
 			// Simply provide HomeKit with whatever you got from HomeSeer
-			// case(characteristicObject.UUID == Characteristic.CurrentAmbientLightLevel.UUID):
+			case(characteristicObject.UUID == Characteristic.CurrentAmbientLightLevel.UUID):
 			case(characteristicObject.UUID == Characteristic.CurrentRelativeHumidity.UUID):
 			case(characteristicObject.UUID == Characteristic.BatteryLevel.UUID):
 			{
