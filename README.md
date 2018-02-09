@@ -1,4 +1,4 @@
-[![npm version](https://badge.fury.io/js/homebridge-homeseer-2018.svg)](https://badge.fury.io/js/homebridge-homeseer-2018)
+[![npm version](https://badge.fury.io/js/homebridge-homeseer-plugin-2018.svg)](https://badge.fury.io/js/homebridge-homeseer-plugin-2018)
 
 # homebridge-homeseer-2018
 
