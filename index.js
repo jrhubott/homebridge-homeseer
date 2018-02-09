@@ -1074,5 +1074,4 @@ function updateCharacteristic(characteristicObject)
 			);
 }
 				
-
 module.exports.platform = HomeSeerPlatform;
