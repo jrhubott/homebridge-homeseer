@@ -574,6 +574,29 @@ HomeSeerAccessory.prototype = {
 
 						break;
 					}
+					// The following is for window coverings, but it is only partially implemented
+					// And not working correctly yet! Not yet suitable for use!					
+					case(Characteristic.TargetPosition.UUID):
+					{
+						// if a simple binary switch is used, then either fully open or fully closed! 
+						if ((this.binary != null) && (this.binary == true))
+						{
+		
+							transmitValue = (level == 0) ? 0 : 255; // Turn to "on"
+							forceHSValue(this.HSRef, transmitValue); 
+							callbackValue = (level == 0) ? 0 : level;
+
+						} 
+						else
+						{
+							transmitValue = (level == 100) ? 99 : level;
+							callbackValue = level;
+							forceHSValue(this.HSRef, transmitValue); 							
+						}
+							
+						console.log("Set TransmitValue for WindowCovering %s to %s ", this.displayName, transmitValue);
+						break;
+					}		
 					
 					case(Characteristic.TargetDoorState.UUID):
 					{
@@ -955,7 +978,48 @@ HomeSeerAccessory.prototype = {
 
 
 				break;
-			}			
+			}
+
+			case "WindowCovering": 
+			{
+				var windowService = new Service.WindowCovering();
+				windowService
+					.getCharacteristic(Characteristic.CurrentPosition)
+					.HSRef = this.config.ref;
+					
+				windowService
+					.getCharacteristic(Characteristic.TargetPosition)
+					.HSRef = this.config.ref;
+					
+				// Is this a simple binary on / off switch (fully opened / fully closed)?
+				// Then identify it as such if the user hasn't already done so!
+				if ((this.binary == null) && (this.model == "Z-Wave Switch Binary"))
+				{
+					windowService
+						.getCharacteristic(Characteristic.TargetPosition)
+						.binary = true;
+				}
+				
+				windowService
+					.getCharacteristic(Characteristic.TargetPosition)
+					.on('set', this.setHSValue.bind(windowService.getCharacteristic(Characteristic.TargetPosition)));		
+
+				if(this.config.obstructionRef != null)
+				{
+				windowService
+					.getCharacteristic(Characteristic.ObstructionDetected)
+					.HSRef = this.config.obstructionRef;
+					_statusObjects[this.config.obstructionRef].push(windowService.getCharacteristic(Characteristic.ObstructionDetected));
+				}
+					
+				services.push(windowService);
+			_statusObjects[this.config.ref].push(windowService.getCharacteristic(Characteristic.CurrentPosition));
+			_statusObjects[this.config.ref].push(windowService.getCharacteristic(Characteristic.TargetPosition));
+
+
+				break;
+			}		
+			
             case "Fan": {
                 var fanService = new Service.Fan
 				fanService.isPrimaryService = true;
@@ -1324,6 +1388,25 @@ function updateCharacteristicFromHSData(characteristicObject)
 				characteristicObject.updateValue((newValue < characteristicObject.batteryThreshold) ? true : false);
 				break;
 			}
+			
+			// Window Coverings are only partially implemented!  Needs more testing with "real" devices.
+			case(characteristicObject.UUID == Characteristic.TargetPosition.UUID): 
+			case(characteristicObject.UUID == Characteristic.CurrentPosition.UUID): // For a Window Covering!
+			{
+				if ((newValue > 100) && (newValue < 255))
+				{	
+				console.log(chalk.bold.red("** Warning - Possible Illegal value for window covering setting"));
+				}
+				
+				console.log(chalk.bold.magenta("Updating Characteristic: " + characteristicObject.displayName + " to value " + ((newValue == 255) ? 100 : newValue)  ));
+				
+				// If you get a value of 255, then its probably from a binary switch, so set as fully open.
+				// Else, its from a percentage-adjustable shade, so set to the percentage.
+				characteristicObject.updateValue( ((newValue == 255) ? 100 : newValue) );	
+				break;
+
+			}
+			
 			case(characteristicObject.UUID == Characteristic.CurrentDoorState.UUID): // For a Garage Door Opener
 			{
 				// console.log(chalk.magenta.bold("Debug - Setting CurrentDoorState to: " + newValue));
