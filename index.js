@@ -272,7 +272,7 @@ HomeSeerPlatform.prototype =
 							if ((self.config.accessories[i].batteryRef == null) && (deviceBattery != (-1)))
 							{
 								console.log(chalk.magenta.bold("Device Reference #: " + self.config.accessories[i].ref 
-								+ " appears to be a battery operated device, but no battery was specified. Adding a battery reference: " + deviceBattery));
+								+ " identifies as a battery operated device, but no battery was specified. Adding a battery reference: " + deviceBattery));
 								self.config.accessories[i].batteryRef = deviceBattery;
 							}
 							if ((deviceBattery != (-1)) && (self.config.accessories[i].batteryRef != deviceBattery)  )
@@ -295,6 +295,7 @@ HomeSeerPlatform.prototype =
 				)
 			.then (()=> 
 				{
+					
 					//////////////////  Identify all of the HomeSeer References of interest  /////////////////////////
 					var allHSRefs = [];
 						allHSRefs.pushUnique = function(item) { if (this.indexOf(item) == -1) this.push(item); }
@@ -580,7 +581,7 @@ HomeSeerAccessory.prototype = {
 					case(Characteristic.TargetPosition.UUID):
 					{
 						// if a simple binary switch is used, then either fully open or fully closed! 
-						if (this.OpenCloseOnly)
+						if (this.binarySwitch)
 						{
 							transmitValue = (level < 50) ? 0 : 255; // Turn to "on"
 							forceHSValue(this.HSRef, transmitValue); 
@@ -699,7 +700,7 @@ HomeSeerAccessory.prototype = {
 					{
 							setTimeout ( ()=>
 							{
-								console.log(chalk.cyan.bold("Window Covering Extra Polling!"));
+								// console.log(chalk.cyan.bold("Window Covering Extra Polling!"));
 								var statusObjectGroup = _statusObjects[this.HSRef];
 								for (var thisCharacteristic in statusObjectGroup)
 								{
@@ -1010,23 +1011,23 @@ HomeSeerAccessory.prototype = {
 					
 				// Is this a simple binary on / off switch (fully opened / fully closed)?
 				// Then identify it as such if the user hasn't already done so!
-				if (this.config.OpenCloseOnly == null)
+				if (this.config.binarySwitch == null)
 				{
 					if(this.model == "Z-Wave Switch Binary")
 					{
-						this.config.OpenCloseOnly = true;
+						this.config.binarySwitch = true;
 
 					}
 					else 
 					{ 
-						this.config.OpenCloseOnly = false; 
+						this.config.binarySwitch = false; 
 					};
 				}
 				
-				console.log(chalk.cyan.bold("Window Binary Setting is: " + this.config.OpenCloseOnly));
+				// console.log(chalk.cyan.bold("Window Binary Setting is: " + this.config.binarySwitch));
 				windowService
 						.getCharacteristic(Characteristic.TargetPosition)
-						.OpenCloseOnly = this.config.OpenCloseOnly;				
+						.binarySwitch = this.config.binarySwitch;				
 				
 				windowService
 					.getCharacteristic(Characteristic.TargetPosition)
@@ -1270,7 +1271,7 @@ HomeSeerAccessory.prototype = {
 		
 		 // If batteryRef has been defined, then add a battery service.
                 if (this.config.batteryRef) {
-                    this.log("          Adding a Battery Service");
+                    // this.log("          Adding a Battery Service");
 
                     var batteryService = new Service.BatteryService();
 					batteryService.displayName = "Service.BatteryService";
@@ -1426,7 +1427,7 @@ function updateCharacteristicFromHSData(characteristicObject)
 				console.log(chalk.bold.red("** Warning - Possible Illegal value for window covering setting"));
 				}
 				
-				console.log(chalk.bold.magenta("Updating Characteristic: " + characteristicObject.displayName + " to value " + ((newValue == 255) ? 100 : newValue)  ));
+				// console.log(chalk.bold.magenta("Updating Characteristic: " + characteristicObject.displayName + " to value " + ((newValue == 255) ? 100 : newValue)  ));
 				
 				// If you get a value of 255, then its probably from a binary switch, so set as fully open.
 				// Else, its from a percentage-adjustable shade, so set to the percentage.
