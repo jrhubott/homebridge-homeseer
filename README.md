@@ -72,7 +72,6 @@ The jrhubott/homebridge-homeseer plugin included support for several device type
 * Door (but you can still configure a Lock)
 * Security System
 * Thermostats (but Temperature Sensors can still be configured!)
-* Window Coverings
 
 In order to allow continued use of these device types, I have implemented a slightly modified version of the original plugin which you can use in parallel with the -2018 plugin to support these devices. Of course, you won't get the instant-status updates and other features of the -2018 plugin, but you won't lose anything either. See the wiki entry "Using 'original' and 'new' Plugin in Parallel." (https://github.com/jvmahon/homebridge-homeseer/wiki/Using-'original'-and-'new'-Plugin-in-Parallel)]
 
