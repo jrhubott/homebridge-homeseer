@@ -411,6 +411,7 @@ HomeSeerPlatform.prototype =
 											var statusObjectGroup = _statusObjects[myData.ref];
 											for (var thisCharacteristic in statusObjectGroup)
 											{
+												console.log(chalk.magenta.bold("Executing line 414 characteristic #: " + thisCharacteristic + " named " + statusObjectGroup[thisCharacteristic].displayName));
 												updateCharacteristicFromHSData(statusObjectGroup[thisCharacteristic]);
 											}
 
@@ -581,18 +582,17 @@ HomeSeerAccessory.prototype = {
 						// if a simple binary switch is used, then either fully open or fully closed! 
 						if ((this.binary != null) && (this.binary == true))
 						{
-		
 							transmitValue = (level == 0) ? 0 : 255; // Turn to "on"
 							forceHSValue(this.HSRef, transmitValue); 
 							callbackValue = (level == 0) ? 0 : level;
 
 						} 
 						else
-						{
-							transmitValue = (level == 100) ? 99 : level;
+						{ 
+							transmitValue = ((level == 100) ? 99 : level);
 							callbackValue = level;
 							forceHSValue(this.HSRef, transmitValue); 							
-						}
+						 } 
 							
 						console.log("Set TransmitValue for WindowCovering %s to %s ", this.displayName, transmitValue);
 						break;
@@ -692,6 +692,23 @@ HomeSeerAccessory.prototype = {
 						// console.log(this.displayName + ': HomeSeer setHSValue function succeeded!');
 						callback(null, callbackValue);
 						// updateCharacteristic(this);// poll for this one changed Characteristic after setting its value.
+						
+					// Strange special case of extra poll needed for window coverings that are controlled by a binary switch.
+					// For odd reason, if poll isn't done, then the icon remains in a changing state until next poll!
+					if (this.UUID == Characteristic.CurrentPosition.UUID || this.UUID == Characteristic.TargetPosition.UUID)
+					{
+							setTimeout ( ()=>
+							{
+								console.log(chalk.cyan.bold("Window Covering Extra Polling!"));
+								var statusObjectGroup = _statusObjects[this.HSRef];
+								for (var thisCharacteristic in statusObjectGroup)
+								{
+									updateCharacteristicFromHSData(statusObjectGroup[thisCharacteristic]);
+								}
+							}, 500);
+					} 
+			
+			
 				}.bind(this))
 				.catch(function(err)
 					{ 	console.log(chalk.bold.red("Error attempting to update %s, with error %s", this.displayName, this.UUID, err));
@@ -1377,7 +1394,7 @@ function updateCharacteristicFromHSData(characteristicObject)
 		// The following "if" is a quick check to see if any change is needed.
 		// if the HomeKit object value already matches what was received in the poll, then return and skip
 		// processing the rest of this function code!
-		if ((pollingCount != 0) && (characteristicObject.value == newValue)) return; 
+		// if ((pollingCount != 0) && (characteristicObject.value == newValue)) return; 
 
 
 		switch(true)
@@ -1402,7 +1419,7 @@ function updateCharacteristicFromHSData(characteristicObject)
 				
 				// If you get a value of 255, then its probably from a binary switch, so set as fully open.
 				// Else, its from a percentage-adjustable shade, so set to the percentage.
-				characteristicObject.updateValue( ((newValue == 255) ? 100 : newValue) );	
+				characteristicObject.updateValue( ( ((newValue == 255) || (newValue == 99)) ? 100 : newValue) );	
 				break;
 
 			}
@@ -1508,7 +1525,7 @@ function updateCharacteristicFromHSData(characteristicObject)
 			}
 			case (characteristicObject.UUID == Characteristic.CurrentTemperature.UUID):
 			{
-				// HomeKit uses celsius, so if HS is using Fahrenheit, convert to Celsius.
+				// HomeKit uses Celsius, so if HS is using Fahrenheit, convert to Celsius.
 				if (characteristicObject.HStemperatureUnit && (characteristicObject.HStemperatureUnit == "F")) 
 					{ newValue = (newValue -32 )* (5/9);}
 								
