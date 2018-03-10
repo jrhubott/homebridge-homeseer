@@ -1010,12 +1010,19 @@ HomeSeerAccessory.prototype = {
 					
 				// Is this a simple binary on / off switch (fully opened / fully closed)?
 				// Then identify it as such if the user hasn't already done so!
-				if ((this.binary == null) && (this.model == "Z-Wave Switch Binary"))
+				if ((this.config.binary == null) && (this.model == "Z-Wave Switch Binary"))
 				{
-					windowService
-						.getCharacteristic(Characteristic.TargetPosition)
-						.binary = true;
+					this.config.binary = true;
+
 				}
+				else 
+				{ 
+					this.config.binary = false; 
+				};
+				
+				windowService
+						.getCharacteristic(Characteristic.TargetPosition)
+						.binary = this.config.binary;				
 				
 				windowService
 					.getCharacteristic(Characteristic.TargetPosition)
