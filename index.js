@@ -582,7 +582,7 @@ HomeSeerAccessory.prototype = {
 						// if a simple binary switch is used, then either fully open or fully closed! 
 						if ((this.binary != null) && (this.binary == true))
 						{
-							transmitValue = (level == 0) ? 0 : 255; // Turn to "on"
+							transmitValue = (level < 50) ? 0 : 255; // Turn to "on"
 							forceHSValue(this.HSRef, transmitValue); 
 							callbackValue = (level == 0) ? 0 : level;
 
