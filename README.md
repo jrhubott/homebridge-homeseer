@@ -13,9 +13,12 @@ If you have problems getting this to work, I will try to help, but please reveiw
 
 ## B.1 **New in 2.3.1 ** - Window Coverings
 
-Control for simple window coverings has been added. See Wiki "Window Coverings" entry for more infomration on how to set this up.
-Fixed a few bugs in battery handling code.
+Control for simple window coverings has returned. To add a Window Covering, put a GarageDoorOpener entry in the accessories section of your config.json file along the lines of:
 
+			{"type":"WindowCovering", 		"ref" 715, 	"binarySwitch":true, 	"obstructionRef":716	}
+
+The "binarySwitch" parameter is optional and used only if your widow covering is controlled by a binary switch and is limited to fully open / fully closed operation. This "should" be detected automatically, but add parameter if needed. The "obstructinRef" parameter is optional.
+            
 See additional information in "Window Coverings" section of the Wiki entry  [Setting Up Your Config.json file.](https://github.com/jvmahon/homebridge-homeseer/wiki/Setting-Up-Your-Config.json-file.)
 
 ## B.2 **New in Version 2.3 ** - Battery Detection, Bug Fixes
@@ -27,14 +30,14 @@ Also bug fixes for Garage Door Opener.
 ## B.3 *New in Version 2.2.5 * - Easier Lighting Configuration
 Since lightbulbs are one of the most common accessories, the plugin has been updated to make it easier to specify lightbulb accessories. You no longer need to individually specify each as an accessory. Instead, you can specify the HomeSeer references for lightbulbs (both dimmable and binary-switched) as a group using the lightbulb group entry identifyer "lightbulbs" in your config.json file like so:
     
-    			"lightbulbs": [308, 311, 314, 317, 400, 415],
+    "lightbulbs": [308, 311, 314, 317, 400, 415],
           
 See additional informatinon in "Lightbulbs Group" section of the Wiki entry  [Setting Up Your Config.json file.](https://github.com/jvmahon/homebridge-homeseer/wiki/Setting-Up-Your-Config.json-file.)
 
 ## B.4. *New in Version 2.2 -* Garage Door Openers
 Support for Garage Door Openers has returned. To add a garage door opener, put a GarageDoorOpener entry in the accessories section of your config.json file along the lines of:
 
-{"type":"GarageDoorOpener", "name":"myGarageDoor", "ref":648, "obstructionRef":649 },
+    {"type":"GarageDoorOpener", "name":"myGarageDoor", "ref":648, "obstructionRef":649 },
 
 See additional information in "Garage Door Openers" section of the Wiki entry  [Setting Up Your Config.json file.](https://github.com/jvmahon/homebridge-homeseer/wiki/Setting-Up-Your-Config.json-file.)
 
