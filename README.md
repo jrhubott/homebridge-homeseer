@@ -16,6 +16,8 @@ If you have problems getting this to work, I will try to help, but please reveiw
 Control for simple window coverings has been added. See Wiki "Window Coverings" entry for more infomration on how to set this up.
 Fixed a few bugs in battery handling code.
 
+See additional information in "Window Coverings" section of the Wiki entry  [Setting Up Your Config.json file.](https://github.com/jvmahon/homebridge-homeseer/wiki/Setting-Up-Your-Config.json-file.)
+
 ## B.2 **New in Version 2.3 ** - Battery Detection, Bug Fixes
 
 Automatically detects if a Z-Wave device has an associated battery and detects/corrects when a wrong battery reference is specified for a device in config.json. 
@@ -27,17 +29,14 @@ Since lightbulbs are one of the most common accessories, the plugin has been upd
     
     			"lightbulbs": [308, 311, 314, 317, 400, 415],
           
-See additional infomratino in the Wiki entry  [Setting Up Your Config.json file.(https://github.com/jvmahon/homebridge-homeseer/wiki/Setting-Up-Your-Config.json-file.)]
+See additional informatinon in "Lightbulbs Group" section of the Wiki entry  [Setting Up Your Config.json file.](https://github.com/jvmahon/homebridge-homeseer/wiki/Setting-Up-Your-Config.json-file.)
 
 ## B.4. *New in Version 2.2 -* Garage Door Openers
 Support for Garage Door Openers has returned. To add a garage door opener, put a GarageDoorOpener entry in the accessories section of your config.json file along the lines of:
 
 {"type":"GarageDoorOpener", "name":"myGarageDoor", "ref":648, "obstructionRef":649 },
 
-where "ref": identifies the reference number of the HomeSeer device that controls the opening / closing of the garage door. This may be designated "Roll Up Door" in Homeseer, and
-where "obstructionRef": identifies the obstruction sensor. This may be designated as "Barrier Sensor" in HomeSeer.
-
-This has been tested with the GoControl/Liner GD00Z-4 garage door opener. I believe it will also work with the Aeotec garage door opener. If you have another Z-Wave opener and can't get that to work, please let me know in the "issues" section. Note that hte "Barrier Sensor" in the GoControl/Linear/Aeotec devices has an odd implementation - sometimes, its used to report whether the barrier (garage door) is obstructed, but at times it reports a "special" value (74) indicating its battery is low. The plugin doesn't distinguish between a battery warning or a true obsruction so if you see an alert (!) symbol  displayed on the HomeKit device icon, you should check on HomeSeer to determine if this is a battery issue or something else. Also, the fact that an obstruction is indicated in the iPhone Home act doesn't actually affect operation - your "real" door opener is what actually decides whether the door can be moved.
+See additional information in "Garage Door Openers" section of the Wiki entry  [Setting Up Your Config.json file.](https://github.com/jvmahon/homebridge-homeseer/wiki/Setting-Up-Your-Config.json-file.)
 
 
 ## B.5. *New in Version 2.1 -* Instant Status Update Feature - Check it out!
@@ -66,14 +65,7 @@ For further infomration on setting up the config.json file, see Wiki page entry 
 
 Note that a user can manually alter their HomeSeer Device type (String) so this mapping mechanism only works if the user hasn't touched it!
 
-## C.2. Automatic uuid_base
-* Default uuid_base for Accessories is now set to the string "Ref" plus the HomeSeer device reference number. This allows a consistent and predictable uuid_base across startups even if the HomeSeer device name changes. It is possible to use the same HomeSeer device reference for multiple HomeKit devices - if you are doing that, you should still manually specify the uuid_base to specify unique values for that group of devices.
-
-  
-## C.3. Certain config.json Settings No longer Needed
-The jrhubott/homebridge-homeseer plugin included support for the specifying the following device configuration parameters in the config.json file: "onValues", "offValues", "LockSecuredValues", "LockUnsecuredValues", and "LockJammedValues." These configuration settings are no longer necessary and have no function in this HomeSeer plugin. Instead this plugin uses the standared Z-Wave values for these settings.  If a specific use case exist for implementing these settings (or if the plugin doesn't work without them for your Z-Wave device), please indicate that as an issue and I'll consider adding support in a future revision.
-
-## C.4. Unsupported Devices
+## C.2. Unsupported Devices
 The jrhubott/homebridge-homeseer plugin included support for several device types that are not supported in this updated -2018 plugin. These types include:
 
 * Battery (now added as a service to the other devices; no longer a separate device)
@@ -85,9 +77,6 @@ The jrhubott/homebridge-homeseer plugin included support for several device type
 In order to allow continued use of these device types, I have implemented a slightly modified version of the original plugin which you can use in parallel with the -2018 plugin to support these devices. Of course, you won't get the instant-status updates and other features of the -2018 plugin, but you won't lose anything either. See the wiki entry "Using 'original' and 'new' Plugin in Parallel." (https://github.com/jvmahon/homebridge-homeseer/wiki/Using-'original'-and-'new'-Plugin-in-Parallel)]
 
 I may add support for some of these devices in the future; however, I don't have a schedule for doing so and may not be able to do so unless someone wants to donate to me devices for testing and implementing the feature.
-
-
-
 
 # D. Installation
 
@@ -104,8 +93,6 @@ For Windows installation, see: https://github.com/jvmahon/homebridge-homeseer/wi
 ## D.2. Linux (Ubuntu/Debian based
 For Linux installation, see: https://github.com/jvmahon/homebridge-homeseer/wiki/Linux-Installation.
  
-
-
 ## E. Cautions
 Extreme caution should be used when using this plugin with sensors and, in particular, any safety oriented sensors. This plugin may not provide real-time update to the sensor status and updates can be delayed due to polling delays or update failurs. Sensor status should not be relied on for critical safety or security applications. This software is implimented for educational and experimental purposes,  is not of commercial quality, and has not undergone significant user testing. All use is at your own risk.
 
