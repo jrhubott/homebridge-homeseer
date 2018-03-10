@@ -705,7 +705,7 @@ HomeSeerAccessory.prototype = {
 								{
 									updateCharacteristicFromHSData(statusObjectGroup[thisCharacteristic]);
 								}
-							}, 500);
+							}, 1000);
 					} 
 			
 			
