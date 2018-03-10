@@ -580,7 +580,7 @@ HomeSeerAccessory.prototype = {
 					case(Characteristic.TargetPosition.UUID):
 					{
 						// if a simple binary switch is used, then either fully open or fully closed! 
-						if ((this.binary != null) && (this.binary == true))
+						if (this.binary)
 						{
 							transmitValue = (level < 50) ? 0 : 255; // Turn to "on"
 							forceHSValue(this.HSRef, transmitValue); 
@@ -705,7 +705,7 @@ HomeSeerAccessory.prototype = {
 								{
 									updateCharacteristicFromHSData(statusObjectGroup[thisCharacteristic]);
 								}
-							}, 1000);
+							}, 500);
 					} 
 			
 			
@@ -1010,16 +1010,20 @@ HomeSeerAccessory.prototype = {
 					
 				// Is this a simple binary on / off switch (fully opened / fully closed)?
 				// Then identify it as such if the user hasn't already done so!
-				if ((this.config.binary == null) && (this.model == "Z-Wave Switch Binary"))
+				if (this.config.binary == null)
 				{
-					this.config.binary = true;
+					if(this.model == "Z-Wave Switch Binary")
+					{
+						this.config.binary = true;
 
+					}
+					else 
+					{ 
+						this.config.binary = false; 
+					};
 				}
-				else 
-				{ 
-					this.config.binary = false; 
-				};
 				
+				console.log(chalk.cyan.bold("Window Binary Setting is: " + this.config.binary));
 				windowService
 						.getCharacteristic(Characteristic.TargetPosition)
 						.binary = this.config.binary;				
