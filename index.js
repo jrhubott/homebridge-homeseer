@@ -580,7 +580,7 @@ HomeSeerAccessory.prototype = {
 					case(Characteristic.TargetPosition.UUID):
 					{
 						// if a simple binary switch is used, then either fully open or fully closed! 
-						if (this.binary)
+						if (this.OpenCloseOnly)
 						{
 							transmitValue = (level < 50) ? 0 : 255; // Turn to "on"
 							forceHSValue(this.HSRef, transmitValue); 
@@ -1010,23 +1010,23 @@ HomeSeerAccessory.prototype = {
 					
 				// Is this a simple binary on / off switch (fully opened / fully closed)?
 				// Then identify it as such if the user hasn't already done so!
-				if (this.config.binary == null)
+				if (this.config.OpenCloseOnly == null)
 				{
 					if(this.model == "Z-Wave Switch Binary")
 					{
-						this.config.binary = true;
+						this.config.OpenCloseOnly = true;
 
 					}
 					else 
 					{ 
-						this.config.binary = false; 
+						this.config.OpenCloseOnly = false; 
 					};
 				}
 				
-				console.log(chalk.cyan.bold("Window Binary Setting is: " + this.config.binary));
+				console.log(chalk.cyan.bold("Window Binary Setting is: " + this.config.OpenCloseOnly));
 				windowService
 						.getCharacteristic(Characteristic.TargetPosition)
-						.binary = this.config.binary;				
+						.OpenCloseOnly = this.config.OpenCloseOnly;				
 				
 				windowService
 					.getCharacteristic(Characteristic.TargetPosition)
