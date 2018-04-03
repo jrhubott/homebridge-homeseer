@@ -244,7 +244,7 @@ HomeSeerPlatform.prototype =
 		var that = this;
 
 		// Check entries in the config.json file to make sure there are no obvious errors.		
-		HSutilities.checkConfig.call(this, this.config);
+		//HSutilities.checkConfig.call(this, this.config);
 
 		/////////////////////////////////////////////////////////////////////////////////		
 		// Make devices for each HomeSeer event in the config.json file
@@ -277,6 +277,10 @@ HomeSeerPlatform.prototype =
 		.then( function(json) //  Find the Batteries!
 			{
 				allHSDevices = json.Devices;
+				
+						
+				// Check entries in the config.json file to make sure there are no obvious errors.		
+				HSutilities.checkConfig.call(self, self.config, allHSDevices);
 
 				for (var i in self.config.accessories)
 				{
@@ -305,6 +309,7 @@ HomeSeerPlatform.prototype =
 
 				return (1);
 			}) // end then's function
+		.catch( (error) => {console.log(magenta("Error checking Battery and Configuration: " + error)); })
 		.then (()=> 
 			{
 				//////////////////  Identify all of the HomeSeer References of interest  ////////////
