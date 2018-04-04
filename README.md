@@ -11,6 +11,12 @@ If you have problems getting this to work, I will try to help, but please reveiw
 
 ## B. Overview of Recent Changes and Additions
 
+## *New in 2.3.12* - Stricter Type Checking, offValue
+
+There code now applies stricter checking to your config.json file. Invalid accessory property names are now checked on a per-type basis and will now throw an error.
+
+Additionally, an "offValue" configuration is now allowed for Switches, Outlets, Fans and Lightbulbs.
+
 ## **New in 2.3.11** - Valve Timers & Types, Thermostat Fixes
 
 The "Valve" type has been enhanced to allow selecting of the type of valve (using config.json parameter valveType: ); allowed values are 0= Generic, 1=Irrigation, 2=Shower Head, 3=Water Faucet. As of iOS 11.3, the only effect is that a setting of 1  will change the Icon displayed in the Home app. All other setttings use the same icon.
