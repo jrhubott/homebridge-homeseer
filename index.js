@@ -262,7 +262,7 @@ HomeSeerPlatform.prototype =
 		// If the config.json file contains a "lightbulbs =" group of references, push them onto the accessories array as "type":"Lightbulb"
 		if(this.config.lightbulbs)
 		{
-			if(this.config.accessories == null) this.config.accessories = []; // make sure there's an accessories array to push bulbs onto
+			if(this.config.accessories === undefined || this.config.accessories == null) this.config.accessories = []; // make sure there's an accessories array to push bulbs onto
 			for (var thisRef in this.config.lightbulbs)
 			{
 				var addLight = { "type":"Lightbulb", "ref":this.config.lightbulbs[thisRef] };
@@ -288,20 +288,20 @@ HomeSeerPlatform.prototype =
 					if (deviceBattery == (-1)) { continue };
 					if ((self.config.accessories[i].batteryRef == null) && (deviceBattery != (-1)))
 					{
-						console.log(chalk.magenta.bold("Device Reference #: " + self.config.accessories[i].ref 
-						+ " identifies as a battery operated device, but no battery was specified. Adding a battery reference: " + deviceBattery));
+						self.log(magenta("Device Reference #: ") + cyan(self.config.accessories[i].ref)
+						+ magenta(" identifies as a battery operated device, but no battery was specified. Adding a battery reference: ") + cyan(deviceBattery));
 						self.config.accessories[i].batteryRef = deviceBattery;
 					}
 					if ((deviceBattery != (-1)) && (self.config.accessories[i].batteryRef != deviceBattery)  )
 					{
-						console.log(chalk.red.bold("Wrong battery Specified for device Reference #: " + self.config.accessories[i].ref 
+						self.log(red("Wrong battery Specified for device Reference #: " + self.config.accessories[i].ref 
 						+ " You specified reference: " + self.config.accessories[i].batteryRef + " but correct device reference appears to be: " + deviceBattery +". Fixing error."));
 						self.config.accessories[i].batteryRef = deviceBattery;
 					}	
 
 					if ((deviceBattery == (-1)) && (self.config.accessories[i].batteryRef)  )
 					{
-						console.log(chalk.yellow.bold("You specified battery reference: "+ self.config.accessories[i].batteryRef + " for device Reference #: " + self.config.accessories[i].ref 
+						self.log(yellow("You specified battery reference: "+ self.config.accessories[i].batteryRef + " for device Reference #: " + self.config.accessories[i].ref 
 						+ " but device does not seem to be battery operated. Check config.json file and fix if this is an error."));
 
 					}									
@@ -427,8 +427,8 @@ HomeSeerPlatform.prototype =
 					this.oldValue = array[3];
 				}
 				var ASCIIPort = "11000";
-					if(this.config["ASCIIPort"]) ASCIIPort = this.config["ASCIIPort"];
-
+				
+				if(this.config["ASCIIPort"]) ASCIIPort = this.config["ASCIIPort"];
 			
 				var uri = parseUri(this.config["host"]);
 				this.log("Host for ASCII Interface set to: " + uri.host + " at port " + ASCIIPort);
