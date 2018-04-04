@@ -309,7 +309,6 @@ HomeSeerPlatform.prototype =
 
 				return (1);
 			}) // end then's function
-		.catch( (error) => {console.log(magenta("Error checking Battery and Configuration: " + error)); })
 		.then (()=> 
 			{
 				//////////////////  Identify all of the HomeSeer References of interest  ////////////
@@ -560,32 +559,6 @@ HomeSeerPlatform.prototype =
 
 				return true;
 			});
-			/*
-			.then( (data)=>
-			{
-				_HSValues.forEach( (element, index) => 
-				{
-					promiseHTTP({ uri: HomeSeerHost + "/JSON?request=getstatus&ref=" + index, json:true})
-					.then( (jsonData) => 
-						{
-							console.log("Testing Comunications with HomeSeer - retrieved data value: " + jsonData.Devices[0].value +", for reference: " +index)
-							
-							promiseHTTP({ uri: HomeSeerHost + "/JSON?request=controldevicebyvalue&ref=" + index + "&value=" + jsonData.Devices[0].value, json:false})
-							.catch((error) => 
-								{
-									console.log(red("Failed to Access HomeSeer device with reference: " + index ));
-									console.log(red(error));
-								});
-							return true;
-						})
-					.catch((error) => 
-						{
-						console.log(red("Failed Accessing HomeSeer Device with Reference: " + index))
-						});
-
-				})
-			});
-			*/
 	}
 }
 
@@ -611,10 +584,6 @@ function HomeSeerAccessory(log, platformConfig, accessoryConfig, status) {
     if (this.config.name)
         this.name = this.config.name;
 
-	
-	// Force uuid_base to be "Ref" + HomeSeer Reference # if the uuid_base is otherwise undefined.
-    if (!this.config.uuid_base)
-		{this.config.uuid_base = "Ref" + this.config.ref};
     
 	this.uuid_base = this.config.uuid_base;
 	
@@ -640,14 +609,13 @@ HomeSeerAccessory.prototype = {
 		this.log = HomeSeer.log;
 		DataExchange.sendToHomeSeer(level, HomeSeerHost, Characteristic, Service, forceHSValue, getHSValue, instantStatusEnabled, this);
   
-		// Strange special case of extra poll needed for window coverings that are controlled by a binary switch.
-		// But which were adjused using the slider. If poll isn't done, then the icon remains in a changing state until next poll!
-		// If the slider set a target state that wasn't 0 or 100
+		// Need to poll  for window coverings that are controlled by a binary switch.
+		// But which were adjused on the iOS Home app using the slider. If poll isn't done, then the icon remains in a changing state until next poll!
+		// when the slider set a target state that wasn't 0 or 100
 		if (this.UUID == Characteristic.CurrentPosition.UUID || this.UUID == Characteristic.TargetPosition.UUID)
 		{
 				setTimeout ( ()=>
 				{
-					// console.log(chalk.cyan.bold("Window Covering Extra Polling!"));
 					var statusObjectGroup = _statusObjects[this.HSRef];
 					for (var thisCharacteristic in statusObjectGroup)
 					{
