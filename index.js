@@ -522,7 +522,7 @@ HomeSeerPlatform.prototype =
 
 				if(instantStatusEnabled)
 				{
-					this.config.platformPoll = 30;
+					this.config.platformPoll = 60;
 					this.log(green("Reducing HomeSeer polling rate to: ") + cyan(this.config.platformPoll) + green(" seconds."))
 
 				}
