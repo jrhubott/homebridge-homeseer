@@ -2,6 +2,8 @@
 
 # homebridge-homeseer-plugin-2018
 
+For the most up-to-date information, see: https://github.com/jvmahon/homebridge-homeseer/tree/master
+
 The homebridge-homeseer-plugin-2018 is an open-source plugin for the homebridge environment. This plugin, when used with homebridge, acts as a bridge between Apple's HomeKit platform and HomeSeer home automation software. The homebridge-homeseer-plugin-2018 supports common Z-Wave device including lights, switches, sensors, locks, and garage door openers. 
 
 ## A. New Installation and Setup Wiki Pages 
