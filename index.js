@@ -12,118 +12,30 @@ var HSutilities = require("./lib/HomeSeerUtilities");
 var HKSetup = require("./lib/HomeKitDeviceSetup");
 var DataExchange = require("./lib/DataExchange");
 
-// Remember to add platform to config.json. 
-//
-// You can get HomeSeer Device References by clicking a HomeSeer device name, then 
-// choosing the Advanced Tab.
-//
-// The uuid_base parameter is valid for all events and accessories. 
-// If you set this parameter to some unique identifier, the HomeKit accessory ID will be based on uuid_base instead of the accessory name.
-// It is then easier to change the accessory name without messing the HomeKit database.
-// 
-//
-// Example:
-// "platforms": [
-//     {
-//         "platform": "HomeSeer",              // Required
-//         "name": "HomeSeer",                  // Required
-//         "host": "http://127.0.0.1",     		// Required - If you did setup HomeSeer authentication, use "http://user:password@ip_address:port"
-//
-//         "events":[                           // Optional - List of Events - Currently they are imported into HomeKit as switches
-//            {
-//               "eventGroup":"My Group",       // Required - The HomeSeer event group
-//               "eventName":"My On Event",     // Required - The HomeSeer event name
-//               "offEventGroup":"My Group",    // Optional - The HomeSeer event group for turn-off <event>
-//               "offEventName":"My Off Event", // Optional - The HomeSeer event name for turn-off <event>
-//               "name":"Test",                 // Optional - HomeSeer event name is the default
-//               "uuid_base":"SomeUniqueId"     // Optional - HomeKit identifier will be derived from this parameter instead of the reference value.
-//            }
-//         ],
-//
-//         "accessories":[                      // Required - List of Accessories
-//            {
-//              "ref":8,                        // Required - HomeSeer Device Reference (To get it, select the HS Device - then Advanced Tab) 
-//              "type":"Lightbulb",             // Required - Lightbulb (currently not enforced, but may be in future)
-//              "name":"My Light",              // Optional - HomeSeer device name is the default
-//				"onValue":255					// Optional.  Don't include for Z-Wave devices. For non-Zwave, set to value used in HomeSeer to designate "on".
-//              "can_dim":true,                 // Optional - true is the default - false for a non dimmable lightbulb
-//              "uuid_base":"SomeUniqueId"     	// Optional - HomeKit identifier will be derived from this parameter instead of the reference value.
-//            },
-//            {
-//              "ref":8,                        // Required - HomeSeer Device Reference (To get it, select the HS Device - then Advanced Tab) 
-//              "type":"Fan",             		// Required for a Fan
-//              "name":"My Fan",              	// Optional - HomeSeer device name is the default
-//				"onValue":255					// Optional.  Don't include for Z-Wave devices. For non-Zwave, set to value used in HomeSeer to designate "on".
-//              "can_dim":true,                 // Optional - true is the default - false for fixed speed fan.
-//              "uuid_base":"SomeUniqueId"     	// Optional - HomeKit identifier will be derived from this parameter instead of the reference value.
-//            },
-//            {
-//              "ref":58,                       // This is a controllable outlet
-//              "type":"Outlet"
-//				"onValue":255					// Optional.  Don't include for Z-Wave devices. For non-Zwave, set to value used in HomeSeer to designate "on".
-//              "uuid_base":"SomeUniqueId"     	// Optional - HomeKit identifier will be derived from this parameter instead of the reference value.
-//            },
-//              "ref":113,                      // Required - HomeSeer Device Reference of the Current Temperature Device
-//              "type":"Thermostat",            // Required for a Thermostat
-//              "name":"Living Room",     		// Optional - HomeSeer device name is the default
-//				"stateRef":164
-//              "controlRef":165,               // Required - HomeSeer device reference for your thermostat mode control (Off/Heating/Cooling/Auto)
-//				"stateRef":	166,				// Required - HomeSeer device reference for your thermostat mode control (Off/Heating/Cooling/Auto)
-//              "coolingSetpointRef":167,       // Required - HomeSeer device reference for your thermostat cooling target setpoint.
-//              "heatingSetpointRef":168,       // Required - HomeSeer device reference for your thermostat cooling target setpoint.
-//              "temperatureUnit":"C",          // Optional - Temperature Unit Used by HomeSeer. F for Fahrenheit, C for Celsius, F is the default
-//            },
-//            {
-//              "ref":111,                      // Required - HomeSeer Device Reference for your sensor
-//              "type":"TemperatureSensor",     // Required for a temperature sensor
-//              "temperatureUnit":"F",          // Optional - C is the default
-//              "name":"Bedroom temp",          // Optional - HomeSeer device name is the default
-//              "batteryRef":112,               // Optional - HomeSeer device reference for the sensor battery level
-//              "batteryThreshold":15           // Optional - If sensor battery level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 25
-//              "uuid_base":"SomeUniqueId"     	// Optional - HomeKit identifier will be derived from this parameter instead of the reference value.
-//            },
-//            {
-//              "ref":34,                       // Required - HomeSeer Device Reference for your sensor
-//              "type":"SmokeSensor",           // Required for a smoke sensor
-//              "name":"Kichen smoke detector", // Optional - HomeSeer device name is the default
-//              "batteryRef":35,                // Optional - HomeSeer device reference for the sensor battery level
-//              "uuid_base":"SomeUniqueId"     	// Optional - HomeKit identifier will be derived from this parameter instead of the reference value.
-//              "batteryThreshold":15,          // Optional - If sensor battery level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 25
-//            },
-//            {
-//              "ref":34,                       // Required - HomeSeer Device Reference for your sensor (Here it's the same device as the SmokeSensor above)
-//              "type":"CarbonMonoxideSensor",  // Required for a carbon monoxide sensor
-//              "name":"Kitchen CO detector",   // Optional - HomeSeer device name is the default
-//              "batteryRef":35,                // Optional - HomeSeer device reference for the sensor battery level
-//              "batteryThreshold":15,          // Optional - If sensor battery level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 25
-//              "uuid_base":"SomeUniqueId"     	// Optional - HomeKit identifier will be derived from this parameter instead of the reference value.
-//            },
-//            {
-//              "ref":210,                      // Required - HomeSeer Device Reference of a Lock
-//              "type":"Lock",                  // Required for a Lock
-//              "batteryRef":35,                // Optional - HomeSeer device reference for the sensor battery level
-//              "uuid_base":"SomeUniqueId"     	// Optional - HomeKit identifier will be derived from this parameter instead of the reference value.
-//              "batteryThreshold":15,          // Optional - If sensor battery level is below this value, the HomeKit LowBattery characteristic is set to 1. Default is 25
-//            }
-//         ]
-//     }
-// ],
-//
+//  - The config.json file information that used to be here was always out of date so it has been moved!
+//     https://github.com/jvmahon/homebridge-homeseer/wiki/Setting-Up-Your-Config.json-file.
 //
 // SUPORTED TYPES:
-// - Lightbulb              (can_dim  options)
-// - Fan              		(can_dim  options, here "can_dim" =' true is for a fan with rotation speed control)
-// - Switch                 
+// - CarbonDioxideSensor 
+// - CarbonMonoxideSensor 
+// - ContactSensor   
+// - Fan  
+// - GarageDoorOpener
+// - HumiditySensor          
+// - LeakSensor             
+// - Lightbulb   
+// - LightSensor       
+// - Lock  
+// - MotionSensor           
+// - OccupancySensor        
 // - Outlet                 
-// - TemperatureSensor      (temperatureUnit=C|F)
-// - ContactSensor          (batteryRef, batteryThreshold options)
-// - MotionSensor           (batteryRef, batteryThreshold options)
-// - LeakSensor             (batteryRef, batteryThreshold options)
-// - OccupancySensor        (batteryRef, batteryThreshold options)
-// - SmokeSensor            (batteryRef, batteryThreshold options)
-// - CarbonMonoxideSensor   (batteryRef, batteryThreshold options)
-// - CarbonDioxideSensor    (batteryRef, batteryThreshold options)
-// - Lock                   
+// - SecuritySystem           
+// - SmokeSensor            
+// - Switch     
+// - Thermostat            
+// - TemperatureSensor  
+// - Valve
+// - WindowCovering
 
 var Accessory, Service, Characteristic, UUIDGen;
 	
