@@ -1,5 +1,9 @@
 'use strict';
 
+var exports = module.exports;
+var globals = null;
+
+
 var net = require('net');
 var promiseHTTP = require("request-promise-native");
 var chalk = require("chalk");
@@ -50,6 +54,8 @@ var pollingCount = 0;
 var _currentHSDeviceStatus = []; 
 var _everyHSDevice = [];
 var allHSDevices = [];
+
+
 // Note that the HomeSeer json date in _currentHSDeviceStatus is of the following form where _currentHSDeviceStatus is an array so
 // an index must be specified to access the properties, such as 
 //  _currentHSDeviceStatus[indexvalue] for a dimmer would be of the form...
@@ -186,38 +192,14 @@ HomeSeerPlatform.prototype =
 		var allStatusUrl = "";
 			
 		promiseHTTP({ uri: this.config["host"] + "/JSON?request=getstatus", json:true})
-		.then( function(json) //  Find the Batteries!
+		.then( function(json)
 			{
 				allHSDevices = json.Devices;
 				
+				exports.allHSDevices = allHSDevices;
 						
 				// Check entries in the config.json file to make sure there are no obvious errors.		
 				HSutilities.checkConfig.call(self, self.config, allHSDevices);
-
-				for (var i in self.config.accessories)
-				{
-					var deviceBattery = findBattery(self.config.accessories[i].ref);
-					if (deviceBattery == (-1)) { continue };
-					if ((self.config.accessories[i].batteryRef == null) && (deviceBattery != (-1)))
-					{
-						self.log(yellow("Device Reference #: ") + cyan(self.config.accessories[i].ref)
-						+ yellow(" identifies as a battery operated device, but no battery was specified. Adding a battery reference: ") + cyan(deviceBattery));
-						self.config.accessories[i].batteryRef = deviceBattery;
-					}
-					if ((deviceBattery != (-1)) && (self.config.accessories[i].batteryRef != deviceBattery)  )
-					{
-						self.log(red("Wrong battery Specified for device Reference #: " + self.config.accessories[i].ref 
-						+ " You specified reference: " + self.config.accessories[i].batteryRef + " but correct device reference appears to be: " + deviceBattery +". Fixing error."));
-						self.config.accessories[i].batteryRef = deviceBattery;
-					}	
-
-					if ((deviceBattery == (-1)) && (self.config.accessories[i].batteryRef)  )
-					{
-						self.log(yellow("You specified battery reference: "+ self.config.accessories[i].batteryRef + " for device Reference #: " + self.config.accessories[i].ref 
-						+ " but device does not seem to be battery operated. Check config.json file and fix if this is an error."));
-
-					}									
-				}
 
 				return (1);
 			}) // end then's function
