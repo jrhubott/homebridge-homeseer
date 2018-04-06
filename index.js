@@ -203,8 +203,17 @@ HomeSeerPlatform.prototype =
 
 				return (1);
 			}) // end then's function
+		.catch( (err) => 
+			{
+				if( err.message.includes("ECONNREFUSED") ) 
+					{
+						err = red( err + "\nCheck if HomeSeer is running, then start homebridge again.");
+					}
+				throw err;
+			} )
 		.then (()=> 
 			{
+				
 				//////////////////  Identify all of the HomeSeer References of interest  ////////////
 				// These are used to obtain status data from HomeSeer
 
@@ -234,6 +243,7 @@ HomeSeerPlatform.prototype =
 						.pushUnique(this.config.accessories[i].humidityTargetRef)
 						.pushUnique(this.config.accessories[i].coolingSetpointRef)
 						.pushUnique(this.config.accessories[i].heatingSetpointRef)
+						.pushUnique(this.config.accessories[i].tamperRef)
 				} // end for
 				
 				for (var j =0; j< allHSRefs.length; j++)
@@ -261,8 +271,6 @@ HomeSeerPlatform.prototype =
 			}) // End of gathering HomeSeer references
 		.catch((err) => 
 			{
-				console.log(magenta("Error Gathering HomeSeer Device References: " + err));
-				err = red(err + " Check if HomeSeer is running, then start homebridge again.");
 				throw err;
 			})
 		
@@ -305,7 +313,6 @@ HomeSeerPlatform.prototype =
 			}.bind(this))
 		.catch((err) => 
 			{
-				err = red("Error setting up Devices: ") + red(err) + red(" Check if HomeSeer is running, then start homebridge again.");
 				throw err;
 			})
 		// Next - if prior .then block was completed without errors, next step is to return all the values to HomeBridge
@@ -457,6 +464,12 @@ HomeSeerPlatform.prototype =
 					);	//end setInterval function for polling loop
 
 				return true;
+			})
+			.catch( (error) => 
+			{
+				// If you get here without handling the error, then stop and report the error
+				this.log(error.message);
+				process.exit();
 			});
 	}
 }
