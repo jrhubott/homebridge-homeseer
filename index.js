@@ -522,7 +522,7 @@ HomeSeerAccessory.prototype = {
 		DataExchange.sendToHomeSeer(level, HomeSeerHost, Characteristic, Service, forceHSValue, getHSValue, instantStatusEnabled, this);
   
 		// Need to poll  for window coverings that are controlled by a binary switch.
-		// But which were adjused on the iOS Home app using the slider. If poll isn't done, then the icon remains in a changing state until next poll!
+		// But which were adjusted on the iOS Home app using the slider. If poll isn't done, then the icon remains in a changing state until next poll!
 		// when the slider set a target state that wasn't 0 or 100
 		if (this.UUID == Characteristic.CurrentPosition.UUID || this.UUID == Characteristic.TargetPosition.UUID)
 		{
@@ -693,7 +693,7 @@ module.exports.platform = HomeSeerPlatform;
 ////////////////////    End of Polling HomeSeer Code    /////////////////////////////		
 
 // Testing Only!
-
+/*
 function findBattery(findRef)
 {
 	try
@@ -746,7 +746,7 @@ function findBattery(findRef)
 	}
 }
 
-
+*/
 
 ////////////////////////   Code to Parse a URI and separate out Host and Port /////////////
 // parseUri 1.2.2
