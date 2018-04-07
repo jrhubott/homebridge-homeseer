@@ -1,3 +1,12 @@
+//
+//
+//	Delete all comments from your actual config.json file!
+//
+// The set of parameters identified in this file is incomplete. 
+// For more up-to-date information, See Wiki entry https://github.com/jvmahon/homebridge-homeseer/wiki/Config.json-Settings
+//
+
+
 {
 	"bridge": 
 	{
