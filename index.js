@@ -664,9 +664,7 @@ HomeSeerEvent.prototype = {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function updateCharacteristicFromHSData(characteristicObject, HSReference)
-{	//console.debug("DEBUG - Executing updateCharacteristicFromHSData(obj, obj)");
-    //console.debug("   characteristicObject: " + JSON.stringify(characteristicObject));
-    //console.debug("   HSReference: " + JSON.stringify(HSReference));
+{	
 	// This performs the update to the HomeKit value from data received from HomeSeer
 	DataExchange.processDataFromHomeSeer(characteristicObject, HSReference, this, Characteristic, Service, getHSValue);
 }
@@ -696,61 +694,6 @@ module.exports.platform = HomeSeerPlatform;
 
 ////////////////////    End of Polling HomeSeer Code    /////////////////////////////		
 
-// Testing Only!
-/*
-function findBattery(findRef)
-{
-	try
-	{
-		var returnValue = 9999;
-				
-		// first find the index of the HomeSeer device having the reference findRef
-		var deviceIndex = allHSDevices.findIndex( (element, index, array)=> {return (element.ref == findRef)} );
-		if (deviceIndex == -1) return (-1);
-		
-		var thisDevice = allHSDevices[deviceIndex]; // this is the HomeSeer data for the device being checked!
-		if ((thisDevice.associated_devices == null) || (thisDevice.associated_devices.length == 0)) return (-1);
-
-		
-		// The associated device should be a root device. Get it! ...
-		var rootDevice = allHSDevices[ allHSDevices.findIndex( (element, index, array)=> {return (element.ref == thisDevice.associated_devices)} )];
-		
-		if(rootDevice.device_type_string.indexOf("Battery") != (-1)) return (rootDevice.ref);
-		
-		if(rootDevice.device_type_string.indexOf("Root Device") != (-1)) // if true, we found the root device. Check all its elements for a battery
-		{
-			// console.log(green("Found a Root Device with associated devices: " + rootDevice.associated_devices));
-			
-			// does the found device have associated devices?
-			if (rootDevice.associated_devices != null)
-			{
-				for (var j in rootDevice.associated_devices)
-				{
-					var checkDeviceIndex = allHSDevices.findIndex( (element, index, array)=> {return (element.ref == rootDevice.associated_devices[j])} )
-					if (checkDeviceIndex != -1)
-					{
-						var candidateDevice = allHSDevices[checkDeviceIndex]
-						if (candidateDevice.device_type_string.indexOf("Battery") != -1)
-						{
-							// console.log(red("Found a Battery reference: " + candidateDevice.ref + " for device reference " + findRef));
-							return (candidateDevice.ref);
-						}
-					}
-				}
-			}
-		}	
-		return (-1);
-	}
-	catch(err)
-	{
-		console.log(yellow("Warning - Error Executing Find Battery Function for device with HomeSeer reference: " + findRef));
-		console.log(yellow("Find Battery function may not function for non-Z-Wave devices. Manually specify your battery! " ));
-		console.log(yellow("Error: " + err));
-		return(-1);
-	}
-}
-
-*/
 
 ////////////////////////   Code to Parse a URI and separate out Host and Port /////////////
 // parseUri 1.2.2
